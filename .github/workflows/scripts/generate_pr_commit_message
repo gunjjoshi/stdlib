@@ -227,12 +227,18 @@ main() {
 	keywords_pattern=$(IFS='|'; echo "${closing_keywords[*]}")
 
 	for issue in $issue_numbers; do
-		if echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
-			closes_issues+="Closes: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
-		else
-			ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
-		fi
-	done
+        issue_details=$(github_api "GET" "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue")
+        issue_title=$(echo "$issue_details" | jq -r '.title')
+        issue_labels=$(echo "$issue_details" | jq -r '.labels[].name')
+
+        if echo "$issue_title" | grep -q "(tracking issue)" || echo "$issue_labels" | grep -q "Tracking Issue"; then
+            ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
+        elif echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
+            closes_issues+="Closes: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
+        else
+            ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
+        fi
+    done
 	closes_issues=$(echo -e "$closes_issues" | sed '$ s/\n$//')
 	ref_issues=$(echo -e "$ref_issues" | sed '$ s/\n$//')
 
