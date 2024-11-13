@@ -226,17 +226,19 @@ main() {
 	# Create a regex pattern from the keywords:
 	keywords_pattern=$(IFS='|'; echo "${closing_keywords[*]}")
 
+	tracking_issue_comment=""
 	for issue in $issue_numbers; do
-		# Fetch issue details:
+		# Fetch issue details to check for tracking issue label
 		issue_details=$(github_api "GET" "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue")
-		issue_title=$(echo "$issue_details" | jq -r '.title')
-		issue_labels=$(echo "$issue_details" | jq -r '.labels[].name')
+		is_tracking=$(echo "$issue_details" | jq -r '.labels[].name' | grep -q "Tracking Issue" && echo "true" || echo "false")
 
-		# Check if the issue is a tracking issue:
-		if echo "$issue_title" | grep -q "(tracking issue)" || echo "$issue_labels" | grep -q "Tracking Issue"; then
-			ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
-		elif echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
+		if echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
 			closes_issues+="Closes: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
+
+			# Add comment if it's a tracking issue
+			if [ "$is_tracking" = "true" ]; then
+				tracking_issue_comment+="This is a tracking issue. Please Modify the OP, if required."
+			fi
 		else
 			ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
 		fi
@@ -254,7 +256,6 @@ main() {
 	if [ -n "$ref_issues" ]; then
 		commit_body+="\n$ref_issues"
 	fi
-	commit_body+="\n"
 	if [ -n "$all_co_authors" ]; then
 		commit_body+="\n$all_co_authors"
 	fi
@@ -266,6 +267,10 @@ main() {
 	# Include Signed-off-by lines if present in the commits:
 	if [ -n "$signed_off_bys" ]; then
 		commit_body+="\n$signed_off_bys"
+	fi
+
+	if [ -n "$tracking_issue_comment" ]; then
+		commit_body+="\n$tracking_issue_comment"
 	fi
 
 	# Combine subject and body:
