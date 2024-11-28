@@ -45,6 +45,11 @@ GITHUB_API_URL="https://api.github.com"
 REPO_OWNER="stdlib-js"
 REPO_NAME="stdlib"
 
+# Exit codes
+SUCCESS=0
+ERROR=1
+TRACKING_ISSUE_FOUND=200
+
 
 # FUNCTIONS #
 
@@ -126,12 +131,12 @@ github_api() {
 			else
 				# Handle cases where POST data is required but not provided:
 				echo "POST request requires data."
-				on_error 1
+				on_error $ERROR
 			fi
 			;;
 		*)
 			echo "Invalid HTTP method: $method"
-			on_error 1
+			on_error $ERROR
 			;;
 	esac
 }
@@ -226,19 +231,18 @@ main() {
 	# Create a regex pattern from the keywords:
 	keywords_pattern=$(IFS='|'; echo "${closing_keywords[*]}")
 
-	tracking_issue_comment=""
+	FOUND_TRACKING_ISSUE=$SUCCESS
 	for issue in $issue_numbers; do
-		# Fetch issue details to check for tracking issue label
+		# Fetch issue labels:
 		issue_details=$(github_api "GET" "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue")
-		is_tracking=$(echo "$issue_details" | jq -r '.labels[].name' | grep -q "Tracking Issue" && echo "true" || echo "false")
+		issue_labels=$(echo "$issue_details" | jq -r '.labels[].name')
 
-		if echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
+		# Check if the issue is a tracking issue:
+		if echo "$issue_labels" | grep -q "Tracking Issue"; then
+			FOUND_TRACKING_ISSUE=$TRACKING_ISSUE_FOUND
+			ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
+		elif echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
 			closes_issues+="Closes: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
-
-			# Add comment if it's a tracking issue
-			if [ "$is_tracking" = "true" ]; then
-				tracking_issue_comment+="This is a tracking issue. Please Modify the OP, if required."
-			fi
 		else
 			ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
 		fi
@@ -256,6 +260,7 @@ main() {
 	if [ -n "$ref_issues" ]; then
 		commit_body+="\n$ref_issues"
 	fi
+	commit_body+="\n"
 	if [ -n "$all_co_authors" ]; then
 		commit_body+="\n$all_co_authors"
 	fi
@@ -269,15 +274,14 @@ main() {
 		commit_body+="\n$signed_off_bys"
 	fi
 
-	if [ -n "$tracking_issue_comment" ]; then
-		commit_body+="\n$tracking_issue_comment"
-	fi
-
 	# Combine subject and body:
 	commit_message="$commit_subject\n\n$commit_body"
 
 	# Output the commit message:
 	echo -e "$commit_message"
+
+	# Return exit code based on tracking issue presence:
+    return $FOUND_TRACKING_ISSUE
 }
 
 # Call main with all command-line arguments:
