@@ -231,7 +231,7 @@ main() {
 	# Create a regex pattern from the keywords:
 	keywords_pattern=$(IFS='|'; echo "${closing_keywords[*]}")
 
-	FOUND_TRACKING_ISSUE=$SUCCESS
+	EXIT_CODE=$SUCCESS
 	for issue in $issue_numbers; do
 		# Fetch issue labels:
 		issue_details=$(github_api "GET" "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue")
@@ -239,7 +239,7 @@ main() {
 
 		# Check if the issue is a tracking issue:
 		if echo "$issue_labels" | grep -q "Tracking Issue"; then
-			FOUND_TRACKING_ISSUE=$TRACKING_ISSUE_FOUND
+			EXIT_CODE=$TRACKING_ISSUE_FOUND
 			ref_issues+="Ref: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
 		elif echo "$pr_body" | grep -Eiq "(${keywords_pattern})([[:space:]]+|:)[[:space:]]*#${issue}\b"; then
 			closes_issues+="Closes: https://github.com/$REPO_OWNER/$REPO_NAME/issues/$issue\n"
@@ -280,8 +280,8 @@ main() {
 	# Output the commit message:
 	echo -e "$commit_message"
 
-	# Return exit code based on tracking issue presence:
-    return $FOUND_TRACKING_ISSUE
+	# Return successful exit code (200 if a tracking issue was found, 0 otherwise):
+    return $EXIT_CODE
 }
 
 # Call main with all command-line arguments:
