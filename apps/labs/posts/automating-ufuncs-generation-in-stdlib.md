@@ -28,9 +28,23 @@ JavaScript has no native concept of typed multi-dimensional arrays. There's no b
 
 You can't just port NumPy's C code and call it a day. JavaScript's type system is different. Everything is a `Number` (float64) unless you explicitly use TypedArrays. Memory management is handled by the garbage collector, not manual allocation. And while Node.js native addons let you write C code, you're still bridging two very different runtime environments.
 
-The performance characteristics are different too. In Python, the overhead of calling into C code is negligible compared to the cost of Python loops. Pure Python loops are notoriously slow, i.e., 100x to 1000x slower than equivalent C code due to dynamic type checking, interpreted execution, and object creation overhead. The cost of crossing the Python/C boundary (a few microseconds) is trivial compared to this massive performance gap, so calling NumPy's C implementations is always a win. In JavaScript, the JIT compiler is sophisticated enough that well-written JavaScript can be surprisingly fast. Crossing the JavaScript/C boundary through N-API has overhead that you need to justify.
+### N-API Overhead Analysis
 
-This overhead isn't constant. It depends on the size of the data being processed. Consider evaluating the error function (`erf`) on vectors of varying sizes. For small vectors (10-100 elements), the cost of marshaling data across the N-API boundary, setting up the native call, and returning results can actually dominate the execution time. Pure JavaScript implementations are competitive here, sometimes even faster because they avoid the boundary crossing entirely. But as vector size grows, the overhead becomes negligible relative to the actual computation time. For large vectors (10,000+ elements), native addons show clear performance gains, typically around 3x faster than JavaScript for mathematical operations.
+The performance characteristics are fundamentally different between Python and JavaScript ecosystems. In Python, the performance gap between interpreted code and C extensions is massive. Pure Python loops are 100-1000x slower than equivalent C code due to dynamic type checking, interpreted execution, and object creation overhead. The cost of crossing the Python/C boundary (a few microseconds) is trivial compared to this performance gap, making NumPy's C-only approach optimal.
+
+JavaScript's performance profile is different. Modern V8's JIT compiler can optimize well-written JavaScript to near-native performance for many operations. However, crossing the JavaScript/C boundary through N-API introduces measurable overhead that varies with data size and must be justified.
+
+Consider the [`@stdlib/math/base/special/erf`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/erf) implementation. The pure JavaScript version in [`lib/main.js`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/erf/lib/main.js) uses polynomial approximations and rational functions optimized for V8's JIT compiler. The native addon calls the optimized C implementation from [`src/main.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/erf/src/main.c).
+
+For small vectors (10-100 elements), the N-API marshaling overhead—converting JavaScript arrays to C memory layouts, setting up the native call, and converting results back—can dominate execution time. The JavaScript implementation avoids this boundary crossing entirely and often performs competitively.
+
+For large vectors (10,000+ elements), the overhead becomes negligible relative to computation time. Native addons show clear performance gains, typically 3x faster for mathematical operations, because they can leverage:
+
+- **SIMD vectorization**: C implementations can use vector instructions directly
+- **Memory locality**: Contiguous memory access patterns without garbage collection interference
+- **Specialized algorithms**: Hand-optimized implementations like those in [`@stdlib/math/base/special/gamma/src/main.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/gamma/src/main.c) using Lanczos approximation
+
+// TODO: Update this chart to include python and numpy too, and then update the text accordingly.
 
 <figure>
   <img src="../public/posts/automating-ufuncs-generation-in-stdlib/napi-overhead-benchmark.png" alt="Performance comparison of JavaScript vs native addon implementations for error function evaluation across different vector sizes, showing native overhead dominates for small vectors but native addons achieve 3x speedup for large vectors" style={{position:'relative',left:'15%',width:'70%'}}/>
@@ -39,7 +53,13 @@ This overhead isn't constant. It depends on the size of the data being processed
   </figcaption>
 </figure>
 
-This is why stdlib's dual implementation strategy makes sense. The JavaScript version handles small-to-medium workloads efficiently without requiring native compilation, while the optional native addon provides substantial speedups for large-scale numerical computing. Users get to choose the trade-off that makes sense for their use case.
+### Universal Compatibility Strategy
+
+This analysis drives stdlib's dual implementation strategy. The JavaScript implementations work across all environments—browsers, Node.js, Deno, Bun, embedded systems, and edge platforms. They use only standard JavaScript features and stdlib's own mathematical utilities like [`@stdlib/math/base/special/ln`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/ln) and [`@stdlib/math/base/special/exp`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/exp), ensuring consistent behavior everywhere.
+
+Native addons in [`src/main.c`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special) files are Node.js-specific performance enhancements. The [`binding.gyp`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/abs/binding.gyp) files configure compilation, but users can choose whether to build them.
+
+This architecture serves both high-performance numerical computing (where native addons provide substantial speedups for large datasets) and general-purpose JavaScript development (where universal compatibility and zero-compilation deployment are essential).
 
 ## stdlib's Approach
 
@@ -49,9 +69,9 @@ stdlib's ufunc system makes three architectural decisions that diverge from NumP
 
 Every universal function has both a pure JavaScript implementation and an optional native addon. The JavaScript version works everywhere and serves as the default. The native addon provides a performance boost for Node.js users who need it, but it's not required. This is different from NumPy, where the C implementation is the only implementation.
 
-### Explicit Type System
+### Decomposable Architecture
 
-stdlib uses explicit type mappings that define every valid input→output dtype combination. A float32 array can produce float32, float64, or generic output depending on the operation and user preferences. Complex dtypes only pair with other complex dtypes for operations that preserve complex values, but produce real dtypes for operations like `abs`. This explicitness makes the type system predictable and debuggable.
+Unlike NumPy, which is a monolithic library where ufuncs are tightly integrated into the core, stdlib follows a **decomposable design philosophy**. Every component exists as an independent, composable package that can be used in isolation or combined with others. You can use scalar math functions without ndarrays, or apply array iteration without knowing about type dispatch. Each piece has a clear API and can be tested, versioned, and distributed independently.
 
 ### Scalar Kernel Composition
 
@@ -59,9 +79,7 @@ stdlib already has 300+ high-quality scalar implementations for mathematical fun
 
 This architecture works well for JavaScript. The dual implementation strategy means you're not forcing users to compile native code just to compute square roots. And the scalar kernel approach leverages existing, well-tested mathematical implementations rather than duplicating effort.
 
-### The Building Blocks
-
-To understand how stdlib's ufunc system works, it helps to see what ingredients are required. Unlike NumPy, which is a monolithic library where ufuncs are tightly integrated into the core, stdlib follows a **decomposable design philosophy**. Every component exists as an independent, composable package that can be used in isolation or combined with others.
+## The Building Blocks
 
 This modularity is fundamental to stdlib's architecture. You can use [`@stdlib/math/base/special/abs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/abs) without ever touching ndarrays. You can use [`@stdlib/ndarray/base/unary`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/ndarray/base/unary) to apply any function element-wise without knowing about type dispatch. Each piece has a clear, documented API and can be tested, versioned, and distributed independently.
 
@@ -126,19 +144,13 @@ In stdlib, a universal function is a **composition** of independent packages:
 │  └─ config.js (policies and dtype families)
 ```
 
-This is why automation is both possible and necessary. The components are modular and reusable, so the generation process can focus on creating the type mappings and dispatch configuration rather than implementing mathematical operations from scratch. But because stdlib's architecture is decomposed rather than monolithic, you can't just copy NumPy's ufunc generation approach—you need a system that understands how to compose independent packages into a cohesive universal function.
+This is why automation is both possible and necessary. The components are modular and reusable, so the generation process can focus on creating the type mappings and dispatch configuration rather than implementing mathematical operations from scratch. But because stdlib's architecture is decomposed rather than monolithic, you can't just copy NumPy's ufunc generation approach. We need a system that understands how to compose independent packages into a cohesive universal function.
 
-## The Automation Problem
 
-But here's the catch: creating these universal functions manually is tedious and error-prone.
 
-Each function needs type mapping arrays defining 50+ input→output combinations, native C bindings that dispatch to the right scalar kernel for each dtype, TypeScript definitions covering all the type relationships, comprehensive test suites, and documentation. The patterns are consistent across functions, but the details vary—`abs` supports all numeric types but always produces real output, `sqrt` only accepts non-negative inputs and produces floating-point output, `sin` works with both real and complex inputs.
+## The Automation Challenge
 
-Multiply this by 100+ mathematical functions, and manual implementation becomes unsustainable. One mistake in the type mappings, and you get runtime errors. Miss a TypeScript definition, and the types don't work. Forget to update a test case, and edge cases slip through.
-
-This is exactly the kind of problem that automation solves: high repetition, clear patterns, and catastrophic consequences for small mistakes. Instead of manually implementing each universal function, we built an infrastructure to generate them automatically from a centralized database of function specifications.
-
-## What Are Universal Functions?
+// TODO: Simplify this diagram to include only native addons, scalar kernels and loops. Rest smaller components are not of much interest.
 
 <figure>
   <img src="../public/posts/automating-ufuncs-generation-in-stdlib/ufunc-package-structure.png" alt="Structure of a universal function package in stdlib showing dual JavaScript/C implementations with comprehensive testing and documentation" style={{position:'relative',left:'10%',width:'80%'}}/>
@@ -147,20 +159,21 @@ This is exactly the kind of problem that automation solves: high repetition, cle
   </figcaption>
 </figure>
 
-Universal functions (ufuncs) are stdlib's solution to this problem. They're the bridge between scalar mathematical operations and efficient ndarray processing. A universal function takes a scalar implementation and wraps it in all the machinery needed to work with ndarrays.
+But here's the challenge: creating these dual-implementation universal functions manually is extraordinarily complex and error-prone.
 
-The challenge is that each universal function is a complex piece of software. It needs to understand dozens of type combinations, dispatch to the right scalar implementation, handle edge cases, and integrate seamlessly with stdlib's broader ecosystem.
+Each function requires both JavaScript and C implementations, comprehensive type mappings, native bindings, TypeScript definitions, and extensive testing. The patterns are consistent across functions, but the details vary—`abs` supports all numeric types but always produces real output, `sqrt` only accepts non-negative inputs, `sin` works with both real and complex inputs.
 
-Consider what happens when you call `sqrt(x)` on an ndarray:
+Consider what implementing a single universal function like [`@stdlib/math/special/abs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs) involves:
 
-1. **Input validation**: Is `x` actually an ndarray? What's its data type?
-2. **Type dispatch**: For float64, use [`@stdlib/math/base/special/sqrt`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/sqrt). For float32, use [`@stdlib/math/base/special/sqrtf`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/sqrtf). For complex numbers, use [`@stdlib/math/base/special/csqrt`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/csqrt).
-3. **Output allocation**: Create a new ndarray with the appropriate output type and shape
-4. **Element-wise computation**: Apply the scalar function to every element
+1. **Dual scalar implementations**: JavaScript version in [`lib/main.js`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/abs/lib/main.js) and C version in [`src/main.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/abs/src/main.c)
+2. **Type dispatch logic**: 59 different input→output dtype combinations defined in [`types.json`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.json)
+3. **Native addon bindings**: N-API wrappers in [`addon.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/src/addon.c) that handle all type combinations
+4. **TypeScript definitions**: Complete type mappings in [`index.d.ts`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/docs/types/index.d.ts)
+5. **Comprehensive testing**: Both JavaScript and native addon test suites
 
-All of this complexity is hidden behind a simple, consistent API.
+Multiply this by 100+ mathematical functions, and manual implementation becomes unsustainable. One mistake in the type mappings, and you get runtime errors. Miss a native binding, and the C implementation fails. Forget to update TypeScript definitions, and the types don't work.
 
-Now that we understand what universal functions do, let's examine what it would take to create them manually, and why that approach would have been unsustainable at scale.
+This is exactly the kind of problem that automation solves: high repetition, clear patterns, and catastrophic consequences for small mistakes.
 
 ## The Challenge: Manual Universal Function Creation
 
