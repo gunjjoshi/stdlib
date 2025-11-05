@@ -150,6 +150,23 @@ To understand why automation was necessary, let's walk through what creating a s
 
 The complexity starts with the type system. The `abs` function supports 59 different input→output type combinations, each following stdlib's **mostly-safe-casts** promotion rules. These rules balance type safety with practical flexibility. Safe Casts preserve data without loss, while floating-point types can downcast with precision loss when mathematically reasonable. The system prevents spurious conversions that would produce mathematically incorrect results, like casting `float32` to `int32`.
 
+The mostly-safe-cast system defines how input types can be promoted to higher precision types for computation:
+
+| Input Type | Can Be Cast To |
+|------------|----------------|
+| `int8` | `int16`, `int32`, `float32`, `float64`, `generic` |
+| `int16` | `int32`, `float32`, `float64`, `generic` |
+| `int32` | `float32`, `float64`, `generic` |
+| `uint8` | `uint16`, `uint32`, `int16`, `int32`, `float32`, `float64`, `generic` |
+| `uint16` | `uint32`, `int32`, `float32`, `float64`, `generic` |
+| `uint32` | `float64`, `generic` |
+| `float32` | `float64`, `generic` |
+| `float64` | `generic` |
+| `complex64` | `complex128`, `generic` |
+| `complex128` | `generic` |
+
+Real types can only be cast to other real types, while complex types can only be cast to other complex types. This prevents unsafe operations like casting complex numbers to real numbers without explicit user intent.
+
 This approach contrasts sharply with NumPy's polymorphic functions. Where NumPy might have a single `np.abs` that handles everything through runtime type dispatch, stdlib maintains distinct scalar kernels with specific type signatures. Behind the scenes, you won't find a single polymorphic absolute value function. Instead, you have `abs` for float64, `absf` for float32, `cabs` for complex128, `cabsf` for complex64, and `labs` for int32. Each kernel knows exactly what type it expects and what type it returns, eliminating runtime type checking overhead and enabling the JavaScript JIT compiler to generate optimized machine code.
 
 But here's the key insight: users never need to think about this complexity. Whether you're working with float32 arrays, complex numbers, or generic data, you simply call `abs(x)` and the universal function automatically selects the optimal kernel. The type dispatch happens transparently, giving you both the performance benefits of specialized implementations and the simplicity of a single, unified interface.
