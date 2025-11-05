@@ -34,11 +34,11 @@ The performance characteristics are fundamentally different between Python and J
 
 JavaScript's performance profile is different. Modern V8's JIT compiler can optimize well-written JavaScript to near-native performance for many operations. However, crossing the JavaScript/C boundary through N-API introduces measurable overhead that varies with data size and must be justified.
 
-Consider the [`@stdlib/math/base/special/erf`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/erf) implementation. The pure JavaScript version in [`lib/main.js`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/erf/lib/main.js) uses polynomial approximations and rational functions optimized for V8's JIT compiler. The native addon calls the optimized C implementation from [`src/main.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/erf/src/main.c).
+Consider the [`@stdlib/math/base/special/erf`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/erf) implementation. The [pure JavaScript version](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/erf/lib/main.js) uses polynomial approximations and rational functions optimized for V8's JIT compiler. The native addon calls the optimized [C implementation](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/erf/src/main.c).
 
-For small vectors (10-100 elements), the N-API marshaling overhead—converting JavaScript arrays to C memory layouts, setting up the native call, and converting results back—can dominate execution time. The JavaScript implementation avoids this boundary crossing entirely and often performs competitively.
+When processing modest-sized arrays (10-100 elements), the cost of shuttling data between JavaScript and C, transforming array formats, preparing native function calls, and translating results, can outweigh the computational benefits. Pure JavaScript implementations eliminate this translation layer and frequently deliver comparable performance.
 
-For large vectors (10,000+ elements), the overhead becomes negligible relative to computation time. Native addons show clear performance gains, typically 3x faster for mathematical operations, because they can leverage:
+For large vectors (10,000+ elements), the overhead becomes negligible relative to computation time. Native addons show clear performance gains, typically 3x faster for mathematical operations, because they can benefit from:
 
 - **SIMD vectorization**: C implementations can use vector instructions directly
 - **Memory locality**: Contiguous memory access patterns without garbage collection interference
@@ -55,9 +55,9 @@ For large vectors (10,000+ elements), the overhead becomes negligible relative t
 
 ### Universal Compatibility Strategy
 
-This analysis drives stdlib's dual implementation strategy. The JavaScript implementations work across all environments—browsers, Node.js, Deno, Bun, embedded systems, and edge platforms. They use only standard JavaScript features and stdlib's own mathematical utilities like [`@stdlib/math/base/special/ln`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/ln) and [`@stdlib/math/base/special/exp`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/exp), ensuring consistent behavior everywhere.
+This analysis drives stdlib's dual implementation strategy. The JavaScript implementations work across all environments: browsers, Node.js, Deno, Bun, embedded systems, and edge platforms. They use only standard JavaScript features and stdlib's own mathematical utilities like [`@stdlib/math/base/special/ln`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/ln) and [`@stdlib/math/base/special/exp`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/exp), ensuring consistent behavior everywhere.
 
-Native addons in [`src/main.c`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special) files are Node.js-specific performance enhancements. The [`binding.gyp`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/abs/binding.gyp) files configure compilation, but users can choose whether to build them.
+Node.js native addons in [`src/addon.c`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/@stdlib/math/base/special) files provide optimized C implementations exposed through N-API bindings. The [`binding.gyp`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/@stdlib/math/base/special/abs/binding.gyp) files configure native compilation, while [`src/main.c`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/@stdlib/math/base/special) contains the underlying scalar implementations.
 
 This architecture serves both high-performance numerical computing (where native addons provide substantial speedups for large datasets) and general-purpose JavaScript development (where universal compatibility and zero-compilation deployment are essential).
 
@@ -144,129 +144,23 @@ In stdlib, a universal function is a **composition** of independent packages:
 │  └─ config.js (policies and dtype families)
 ```
 
-This is why automation is both possible and necessary. The components are modular and reusable, so the generation process can focus on creating the type mappings and dispatch configuration rather than implementing mathematical operations from scratch. But because stdlib's architecture is decomposed rather than monolithic, you can't just copy NumPy's ufunc generation approach. We need a system that understands how to compose independent packages into a cohesive universal function.
-
-
-
-## The Automation Challenge
-
-// TODO: Simplify this diagram to include only native addons, scalar kernels and loops. Rest smaller components are not of much interest.
-
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/ufunc-package-structure.png" alt="Structure of a universal function package in stdlib showing dual JavaScript/C implementations with comprehensive testing and documentation" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 2: Structure of a universal function package in stdlib, showing the dual implementation approach with JavaScript as default and Node.js native addons for performance, along with comprehensive testing, documentation, and type system components.
-  </figcaption>
-</figure>
-
-But here's the challenge: creating these dual-implementation universal functions manually is extraordinarily complex and error-prone.
-
-Each function requires both JavaScript and C implementations, comprehensive type mappings, native bindings, TypeScript definitions, and extensive testing. The patterns are consistent across functions, but the details vary—`abs` supports all numeric types but always produces real output, `sqrt` only accepts non-negative inputs, `sin` works with both real and complex inputs.
-
-Consider what implementing a single universal function like [`@stdlib/math/special/abs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs) involves:
-
-1. **Dual scalar implementations**: JavaScript version in [`lib/main.js`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/abs/lib/main.js) and C version in [`src/main.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/base/special/abs/src/main.c)
-2. **Type dispatch logic**: 59 different input→output dtype combinations defined in [`types.json`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.json)
-3. **Native addon bindings**: N-API wrappers in [`addon.c`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/src/addon.c) that handle all type combinations
-4. **TypeScript definitions**: Complete type mappings in [`index.d.ts`](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/docs/types/index.d.ts)
-5. **Comprehensive testing**: Both JavaScript and native addon test suites
-
-Multiply this by 100+ mathematical functions, and manual implementation becomes unsustainable. One mistake in the type mappings, and you get runtime errors. Miss a native binding, and the C implementation fails. Forget to update TypeScript definitions, and the types don't work.
-
-This is exactly the kind of problem that automation solves: high repetition, clear patterns, and catastrophic consequences for small mistakes.
-
 ## The Challenge: Manual Universal Function Creation
 
 To understand why automation was necessary, let's walk through what creating a single universal function would involve. Take `abs` (absolute value) as an example. It seems simple, but the implementation details are extensive.
 
-### Step 1: Analyze Type Requirements
+The complexity starts with the type system. The `abs` function supports 59 different input→output type combinations, each following stdlib's **mostly-safe-casts** promotion rules. These rules balance type safety with practical flexibility. Safe Casts preserve data without loss, while floating-point types can downcast with precision loss when mathematically reasonable. The system prevents spurious conversions that would produce mathematically incorrect results, like casting `float32` to `int32`.
 
-First, you'd need to figure out all the valid type combinations. The `abs` function actually supports 59 different input→output type combinations, organized in this type promotion matrix:
+This approach contrasts sharply with NumPy's polymorphic functions. Where NumPy might have a single `np.abs` that handles everything through runtime type dispatch, stdlib maintains distinct scalar kernels with specific type signatures. Behind the scenes, you won't find a single polymorphic absolute value function. Instead, you have `abs` for float64, `absf` for float32, `cabs` for complex128, `cabsf` for complex64, and `labs` for int32. Each kernel knows exactly what type it expects and what type it returns, eliminating runtime type checking overhead and enabling the JavaScript JIT compiler to generate optimized machine code.
 
-```
-Input Type    │ Output Types
-──────────────┼─────────────────────────────────────────────────────────────────
-float64       │ float64, generic
-float32       │ float32, float64, generic
-complex128    │ float64, generic
-complex64     │ float32, float64, generic
-int32         │ int32, uint32, float64, generic
-int16         │ int16, int32, uint16, uint32, float32, float64, generic
-int8          │ int8, int16, int32, uint8, uint8c, uint16, uint32, float32, float64, generic
-uint32        │ uint32, float64, generic
-uint16        │ int32, uint16, uint32, float32, float64, generic
-uint8         │ int16, int32, uint8, uint8c, uint16, uint32, float32, float64, generic
-uint8c        │ int16, int32, uint8, uint8c, uint16, uint32, float32, float64, generic
-generic       │ generic
-```
+But here's the key insight: users never need to think about this complexity. Whether you're working with float32 arrays, complex numbers, or generic data, you simply call `abs(x)` and the universal function automatically selects the optimal kernel. The type dispatch happens transparently, giving you both the performance benefits of specialized implementations and the simplicity of a single, unified interface.
 
-This matrix is generated using stdlib's **mostly-safe-casts** system, which defines type promotion rules that balance safety with flexibility:
+The type matrix reveals the mathematical logic behind the system. Complex types always produce real outputs since absolute value computes magnitude. Smaller integer types have more promotion options than larger ones. Floating-point types can downcast when precision loss is acceptable. Unsigned integers can promote to signed integers of sufficient width. Generic arrays serve as the universal fallback, accepting any JavaScript value while providing a consistent interface for mathematical operations.
 
-**Mostly-Safe-Casts Rules:**
-- **Safe casts**: No data loss (e.g., `int8` → `int16`, `float32` → `float64`)
-- **Precision-losing downcasts**: Allowed for floating-point types (e.g., `float64` → `float32`)
-- **Complex promotion**: Real types can promote to complex, but not vice versa
-- **Generic compatibility**: All types can cast to `generic`, `generic` only to itself
+The dual implementation strategy becomes particularly important when dealing with generic ndarrays. Generic arrays can contain arbitrary JavaScript objects such as strings, custom objects, or even functions. While JavaScript implementations can gracefully handle these cases through the accessor protocol, C implementations hit a fundamental wall. Every element access would require unboxing JavaScript values, converting them to C types for computation, then boxing the results back. This marshaling overhead completely defeats the performance benefits of native code. The JavaScript implementation, however, can process generic arrays efficiently using optimized accessor functions that the JIT compiler can inline and optimize.
 
-**Key patterns in the type matrix:**
-- **Complex types** always produce real outputs (absolute value/magnitude)
-- **Smaller integer types** have more promotion options than larger ones
-- **Floating-point types** can downcast (precision loss allowed)
-- **Unsigned integers** can promote to signed integers of sufficient width
+Creating these type mappings manually would require writing a flat array where every pair of entries represents an input type and its corresponding output type. For the 59 combinations in `abs`, this means carefully enumerating each valid transformation while ensuring mathematical correctness. Complex inputs need special handling: not through generic type promotion, but through dedicated scalar kernels that understand the mathematical relationship between complex inputs and real outputs.
 
-The scaffold system automatically generates these 59 combinations by calling `mostlySafeCasts(inputDtype)` for each input type, then filtering by the function's output policy (`real_and_generic` for `abs`). Here's the actual implementation:
-
-```javascript
-// From @stdlib/_tools/scaffold/math-special-unary/scripts/script.js
-var mostlySafeCasts = require( '@stdlib/ndarray/mostly-safe-casts' );
-
-// Generate all mostly-safe cast combinations:
-for ( i = 0; i < idt.length; i++ ) {
-    inputDtype = idt[ i ];
-
-    if ( inputDtype === 'generic' ) {
-        allowedCasts = [ 'generic' ];
-    } else {
-        // Get all dtypes this input can be mostly-safely cast to:
-        allowedCasts = mostlySafeCasts( inputDtype );
-        /*
-        * For complex64 input:
-        * allowedCasts = [
-        *     'complex64',
-        *     'complex128',
-        *     'generic'
-        * ]
-        */
-    }
-
-    // Remove dtypes not allowed by output policy (e.g., 'real_and_generic'):
-    // For abs function, this filters complex64 → [complex64, complex128, generic]
-    // down to just [generic], since only real types are allowed as output
-    filtered = [];
-    for ( k = 0; k < allowedCasts.length; k++ ) {
-        if ( odt.indexOf( allowedCasts[ k ] ) !== -1 ) {
-            filtered.push( allowedCasts[ k ] );
-        }
-    }
-    allowedCasts = filtered;
-
-    // However, the abs function has special scalar kernels for complex inputs:
-    // complex64 → cabsf (outputs float32), complex128 → cabs (outputs float64)
-    // So additional mappings are created based on the scalar kernel's natural output type
-
-    // Generate mappings for each valid input→output combination
-    for ( j = 0; j < allowedCasts.length; j++ ) {
-        outputDtype = allowedCasts[ j ];
-        // Create type mapping entry...
-    }
-}
-```
-
-This ensures comprehensive type coverage while maintaining mathematical correctness.
-
-### Step 2: Create Type Mapping Arrays
-
-Then you'd write the type mapping array by hand, i.e., a flat array where every pair of entries represents an input type and its corresponding output type:
+Here's what that manual enumeration would look like:
 
 ```javascript
 var types = [
@@ -279,31 +173,21 @@ var types = [
     dtypes.float32.enum, dtypes.float64.enum,
     dtypes.float32.enum, dtypes.generic.enum,
 
-    // generic input
-    dtypes.generic.enum, dtypes.generic.enum,
-
-    // complex128 input
-    dtypes.complex128.enum, dtypes.float64.enum,
-    dtypes.complex128.enum, dtypes.generic.enum,
-
-    // complex64 input
-    dtypes.complex64.enum, dtypes.float32.enum,
-    dtypes.complex64.enum, dtypes.float64.enum,
-    dtypes.complex64.enum, dtypes.generic.enum,
-
     // int32 input
     dtypes.int32.enum, dtypes.int32.enum,
     dtypes.int32.enum, dtypes.uint32.enum,
     dtypes.int32.enum, dtypes.float64.enum,
     dtypes.int32.enum, dtypes.generic.enum,
 
-    // ... 35+ more combinations for int16, int8, uint32, uint16, uint8, uint8c
+    // ... more combinations for int16, int8, uint32, uint16, uint8, uint8c
 ];
 ```
 
-### Step 3: Implement Native C Bindings
+This flat array approach enables efficient runtime dispatch. The system computes an index into this array based on the input and output dtypes, then uses that same index to look up the appropriate scalar kernel in the parallel data.js array. This eliminates complex branching logic during the hot loop of array processing.
 
-Next, you'd create the native C addon that bridges JavaScript and the scalar implementations:
+Next, you'd create the native C addon that bridges JavaScript and the scalar implementations. This involves mapping each type combination to the appropriate scalar function, whether that's `stdlib_base_abs` for float64, `stdlib_base_absf` for float32, `stdlib_base_cabs` for complex128, or `stdlib_base_labs` for int32. The challenge is ensuring every one of those 59 type combinations has the correct C function pointer.
+
+Here's how that mapping would look in the native addon:
 
 ```c
 // Map each type combination to the right scalar function
@@ -327,90 +211,186 @@ static void *data[] = {
 };
 ```
 
-### Step 4: Generate TypeScript Definitions
+The native addon generation handles the complexity of type promotion and demotion. When no direct kernel exists for a specific input-output type combination, the system creates intermediate functions like `stdlib_ndarray_f_f_as_d_d`. This cryptic name encodes that a float32 input gets promoted to float64 for computation, then the result is demoted back to float32 for the output array. This approach ensures mathematical accuracy by computing at higher precision while maintaining the expected output type.
 
-You'd need comprehensive TypeScript definitions that handle the complex type relationships:
+This type promotion and demotion process is visualized below, showing how the system handles cases where no direct kernel exists for a specific input-output combination:
 
-```typescript
-/**
-* Input array.
-*/
-type InputArray = realcomplexndarray | genericndarray<number>;
+<figure>
+  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/type-promotion-demotion.png" alt="Type promotion and demotion process showing float32 input promoted to float64 for computation then demoted back to float32 output" style={{position:'relative',left:'10%',width:'80%'}}/>
+  <figcaption>
+    Figure 9: Type promotion and demotion process. When no direct float32→float32 kernel exists for a mathematical operation, the system promotes the input to float64 for higher precision computation, then demotes the result back to the original output type.
+  </figcaption>
+</figure>
 
-/**
-* Output array.
-*/
-type OutputArray = realndarray | genericndarray<number>;
+The beauty of this approach is that it happens automatically. Users don't need to understand the intricate type promotion rules or worry about whether a direct kernel exists for their specific dtype combination. The universal function system handles these decisions transparently, ensuring mathematical accuracy while maintaining performance.
 
-/**
-* Interface describing options.
-*/
-interface Options {
-    /**
-    * Output array order.
-    */
-    order?: Order;
+### Function-Specific Architecture
 
-    /**
-    * Output array data type.
-    */
-    dtype?: DataType;
-}
+Each universal function package contains several carefully orchestrated files that work together. Let's examine each one in detail.
 
-/**
-* Interface describing a unary element-wise function.
-*/
-interface UnaryFunction {
-    /**
-    * Computes the absolute value for each element in an ndarray.
-    */
-    ( x: InputArray, options?: Options ): typedndarray<number>;
+### types.json - The Type Mapping Matrix
 
-    /**
-    * Computes the absolute value for each element in an ndarray and assigns results to a provided output ndarray.
-    */
-    assign<T extends OutputArray = OutputArray>( x: InputArray, y: T ): T;
-}
+The `types.json` file encodes the complete type mapping matrix as a compact integer array, where each pair of values represents input and output dtype enums. This enables the dispatch system to compute array indices for O(1) kernel lookup during iteration.
+
+Here's what this file looks like for the `abs` function:
+
+```json
+[12,12,12,17,11,11,11,12,11,17,17,17,15,12,15,17,14,11,14,12,14,17,6,6,6,7,6,12,6,17,4,4,4,6,4,5,4,7,4,11,4,12,4,17,1,1,1,4,1,6,1,2,1,3,1,5,1,7,1,11,1,12,1,17,7,7,7,12,7,17,5,6,5,5,5,7,5,11,5,12,5,17,2,4,2,6,2,2,2,3,2,5,2,7,2,11,2,12,2,17,3,4,3,6,3,2,3,3,3,5,3,7,3,11,3,12,3,17]
 ```
 
-### Step 5: Write Tests and Documentation
+Each pair of numbers represents an input→output dtype combination. The first `12,12` means float64 input maps to float64 output, the next `12,17` means float64 input can also map to generic output, and so on through all 59 possible combinations.
 
-Finally, you'd write comprehensive tests covering all type combinations, edge cases, and error conditions, plus documentation that follows stdlib's conventions.
+These numbers come from stdlib's dtype enumeration system. You can obtain them programmatically using the `@stdlib/ndarray/dtypes` package:
 
-### The Scale Problem
+```javascript
+import dtypes from '@stdlib/ndarray/dtypes';
 
-Now multiply this by 100+ mathematical functions: [`sqrt`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/sqrt), [`sin`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/sin), [`cos`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/cos), [`tan`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/tan), [`exp`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/exp), [`log`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/ln), [`ceil`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/ceil), [`floor`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/floor), [`round`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/round), [`factorial`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/factorial), [`gamma`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/gamma), and dozens more. Each function has its own type requirements, scalar implementations, and edge cases.
+// Get enum values for specific dtypes
+const float64Enum = dtypes.float64.enum;  // 12
+const float32Enum = dtypes.float32.enum;  // 11
+const genericEnum = dtypes.generic.enum;  // 17
 
-This is exactly the kind of problem that automation solves beautifully: high repetition, clear patterns, and catastrophic consequences for small mistakes.
+// Or get all supported dtypes with their enums
+const allDtypes = dtypes();  // Returns array of dtype objects with name, enum, etc.
+```
 
-The scale and complexity of manual creation made automation not just helpful, but essential. The solution needed to handle the mechanical work while preserving the flexibility to accommodate different mathematical functions and their unique requirements.
+The scaffold system automatically generates these arrays by calling the dtype enumeration functions and building the complete type mapping matrix based on the function's casting policies.
 
-## The Solution: Automate Repetition
+### data.js - The Kernel Function Array
 
-Looking at these requirements, the solution became clear: 90% of the work was mechanical. The patterns were consistent across functions, the structure was predictable, and the variations were limited to a few key parameters (which scalar implementations to use, what types to support, how to handle edge cases).
+The `data.js` file contains the parallel array of scalar kernel functions, ordered to match the type mappings. When you call `abs(x)` on a float32 array, the system computes which index in the types array corresponds to float32→float32 processing, then uses that same index to pull the appropriate kernel from data.js.
 
-This was perfect territory for automation. Instead of manually implementing each universal function, we could:
+Here's the structure of this file:
 
-1. **Centralize the metadata** about each function in a database
-2. **Generate all the boilerplate** using templates
-3. **Automate the maintenance** with GitHub workflows
+```javascript
+// Scalar kernel imports
+import abs from '@stdlib/math/base/special/abs';
+import absf from '@stdlib/math/base/special/absf';
+import labs from '@stdlib/math/base/special/labs';
+import cabs from '@stdlib/math/base/special/cabs';
+import cabsf from '@stdlib/math/base/special/cabsf';
 
-Here's how the system works: We'll explore each component in detail, starting with the centralized database that serves as the foundation for everything else.
+// Kernel function array: order must match types.json
+const data = [
+    abs, abs,        // float64 → float64, float64 → generic
+    absf, abs, abs,  // float32 → float32, float32 → float64, float32 → generic
+    abs,             // generic → generic
+    cabs, cabs,      // complex128 → float64, complex128 → generic
+    // ... 59 total combinations
+];
 
-### 1. Centralized Unary Function Database
+export default data;
+```
 
-The automation system actually uses two related databases that work together:
+Notice how the order must exactly match the type mappings in `types.json`. The first two entries correspond to the first two pairs in the JSON array (float64→float64 and float64→generic), the next three correspond to the float32 mappings, and so on.
 
-**Source Database**: [`lib/node_modules/@stdlib/math/special/data/unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json)
-- Manually maintained database containing the core metadata for each function
-- Serves as the authoritative source for function specifications
-- Contains scalar kernel mappings, type policies, and exclusion rules
+### config.js - Policies and Constraints
+
+The `config.js` file defines the function's policies and constraints. It specifies which dtype families the function supports, the number of input and output arrays, and casting policies. These policies determine how the function behaves when faced with input arrays that don't have direct kernel implementations.
+
+Here's the configuration for the `abs` function:
+
+```javascript
+const config = {
+    // Total number of ndarray arguments:
+    nargs: 2,
+
+    // Number of input/output arrays:
+    nin: 1,
+    nout: 1,
+
+    // Supported data types:
+    idtypes: dtypes('numeric_and_generic'),  // input types
+    odtypes: dtypes('real_and_generic'),     // output types
+
+    // Dispatch policies:
+    policies: {
+        output: 'real_and_generic',
+        casting: 'none'
+    }
+};
+
+export default config;
+```
+
+The key insight is that `abs` accepts any numeric type (including generic arrays) as input, but only produces real numbers or generic outputs. Complex inputs are handled by dedicated kernels that compute the magnitude, while unsigned integer types use identity functions since their absolute value is the number itself.
+
+When you chain operations like `sqrt(abs(x))`, stdlib's universal functions avoid creating temporary arrays through buffer reuse. The key insight is that both `abs` and `sqrt` can often operate in-place on the same memory buffer when the input and output dtypes match.
+
+Consider this concrete example:
+
+```javascript
+import abs from '@stdlib/math/special/abs';
+import sqrt from '@stdlib/math/special/sqrt';
+
+let x = new Float64Array([ -4.0, -9.0, -16.0 ]);
+
+// Traditional approach: creates intermediate array
+// let temp = abs(x);  // [-4, -9, -16] → [4, 9, 16]
+// let result = sqrt(temp);  // [4, 9, 16] → [2, 3, 4]
+
+// stdlib approach: reuses the same buffer
+let result = sqrt(abs(x));  // Single buffer: [-4, -9, -16] → [2, 3, 4]
+```
+
+The optimization works because both functions support `float64` → `float64` processing with contiguous memory layouts (no strides), and since these operations are element-wise and don't depend on neighboring values, the same buffer can safely hold both input and output. This means when `abs` processes a `Float64Array`, it can write results back to the same memory locations, and `sqrt` can then process those same locations without allocating intermediate storage.
+
+When dtypes differ (like `abs(int32)` → `float64`), stdlib creates a new buffer since the output requires different memory storage. But for compatible types, the system reuses buffers automatically, cutting memory usage and garbage collection pressure in half for chained operations.
+
+The automation challenge comes from generating the universal function wrappers for all these mathematical functions. Each wrapper needs type mapping matrices encoding the 59 input-output dtype combinations we saw in `types.json`, scalar kernel mappings that route each combination to the appropriate implementation, configuration policies that specify supported dtypes and casting rules, native addon bindings with N-API code to bridge JavaScript and C implementations, plus comprehensive documentation and tests ensuring the universal function behaves correctly across all supported types.
+
+The breakthrough came from recognizing that all this manual work followed predictable patterns. The automation pipeline centers around two JSON databases that capture the essential metadata needed to generate complete universal function packages.
+
+## The Database System: From Manual to Automated
+
+The breakthrough came from recognizing that all this manual work followed predictable patterns. Rather than having to copy-paste code between packages, we needed a systematic way to capture the essential metadata that drives universal function generation.
+
+### The Database Solution: Systematic Metadata Management
+
+The breakthrough came from recognizing that universal function generation is fundamentally a metadata management problem. We needed two types of information, each requiring different curation approaches:
+
+**Mathematical specifications** change rarely but require human judgment. Should `abs` support complex numbers? How should `sqrt` handle negative inputs? These decisions need mathematical expertise and careful consideration of edge cases.
+
+**Implementation details** change frequently but follow predictable patterns. Function signatures, parameter names, example values - these update automatically as scalar packages evolve. Manually tracking these across 100+ functions was the source of our inconsistencies.
+
+We solved this by splitting the metadata into two databases that work together during generation.
+
+The problem becomes clear when you see what happened during our `float16` addition. We had to manually update dozens of packages, each requiring the same changes:
+
+```javascript
+// Before: Manual updates across 50+ packages
+// Each package had hardcoded type mappings like:
+const types = {
+  float64: '@stdlib/math/base/special/abs',
+  float32: '@stdlib/math/base/special/absf',
+  // Missing: float16 - had to be added manually to every package
+};
+
+// After: Database-driven generation
+// The function database specifies kernels once:
+"scalar_kernels": {
+  "float64": "@stdlib/math/base/special/abs",
+  "float32": "@stdlib/math/base/special/absf",
+  "float16": "@stdlib/math/base/special/abs2"
+}
+// All universal functions automatically include float16 support
+```
+
+This systematic approach eliminates the manual inconsistencies that plagued early implementations and enables confident updates across the entire universal function ecosystem.
+
+### Function Database: Mathematical Specifications
+
+The function database lives at `lib/node_modules/@stdlib/math/special/data/unary_function_database.json` and contains the authoritative specifications for each mathematical function. Here's the entry for absolute value:
 
 ```json
 {
+  // Function alias (determines generated package name)
   "abs": {
+    // Accepts all numeric types + generic arrays
     "input_dtypes": "numeric_and_generic",
+    // Outputs real numbers only (abs of complex → real magnitude)
     "output_dtypes": "real_and_generic",
+    // Types to skip during generation
     "excluded_dtypes": [
       "float16",
       "int64",
@@ -418,6 +398,7 @@ The automation system actually uses two related databases that work together:
       "uint8c",
       "complex32"
     ],
+    // Maps each dtype to its scalar implementation
     "scalar_kernels": {
       "int32": "@stdlib/math/base/special/labs",
       "uint8": "@stdlib/number/uint8/base/identity",
@@ -429,51 +410,78 @@ The automation system actually uses two related databases that work together:
       "complex128": "@stdlib/math/base/special/cabs",
       "generic": "@stdlib/math/base/special/abs"
     },
+    // Runtime behavior policies
     "policies": {
+      // Output dtype policy (real numbers only)
       "output": "real_and_generic",
+      // No automatic input casting allowed
       "casting": "none"
     }
   }
 }
 ```
 
-**Generated Database**: `lib/node_modules/@stdlib/math/special/data/unary.json`
-- Automatically generated from the source database and package metadata
-- Used by the actual code generation scripts
-- Updated by GitHub workflows when scalar functions change
+Each field drives specific aspects of universal function generation. The `input_dtypes` and `output_dtypes` fields define the mathematical boundaries. For `abs`, `numeric_and_generic` means it accepts any numeric type plus generic JavaScript objects, while `real_and_generic` restricts outputs to real numbers since absolute value of complex numbers produces real magnitudes. These policies interface with the mostly-safe-casts system to automatically generate the 59-entry type mapping matrix we saw earlier.
+
+The `scalar_kernels` mapping is where the mathematical rubber meets the implementation road. Each entry points to the specific scalar function that knows how to compute the operation for that dtype. Notice how `uint8`, `uint16`, and `uint32` use identity functions rather than actual absolute value computations. These unsigned types are already non-negative, so the mathematical operation simplifies to just returning the input unchanged.
+
+The `excluded_dtypes` field provides fine-grained control over which types to skip during generation. Some functions don't make mathematical sense for certain dtypes. For example, `abs` excludes `uint8c` (clamped unsigned bytes) because the absolute value of an already non-negative type is just the identity operation, which has its own specialized implementation.
+
+### Package Database: Implementation Details
+
+The package database at `lib/node_modules/@stdlib/math/special/data/unary.json` contains granular metadata extracted from individual scalar packages. Here's the entry for the `absf` (single-precision absolute value) kernel:
 
 ```json
 {
+  // Package path (key for lookup)
   "@stdlib/math/base/special/absf": {
+    // Schema version for validation
     "$schema": "math/base@v1.0",
+    // Base function name for grouping
     "base_alias": "abs",
+    // Specific function alias
     "alias": "absf",
+    // Package description
     "pkg_desc": "compute the absolute value of a single-precision floating-point number",
+    // Function description
     "desc": "computes the absolute value of a single-precision floating-point number",
+    // Short description for summaries
     "short_desc": "absolute value",
+    // Parameter specifications
     "parameters": [
       {
+        // Parameter name
         "name": "x",
+        // Parameter description
         "desc": "input value",
+        // Cross-language type mapping
         "type": {
+          // JavaScript type
           "javascript": "number",
+          // JSDoc type annotation
           "jsdoc": "number",
+          // C implementation type
           "c": "float",
+          // ndarray dtype
           "dtype": "float32"
         },
+        // Mathematical domain
         "domain": [
           {
+            // Minimum valid value
             "min": "-infinity",
+            // Maximum valid value
             "max": "infinity"
           }
         ],
+        // Random value generation for tests
         "rand": {
+          // PRNG to use
           "prng": "random/base/uniform",
-          "parameters": [
-            -10,
-            10
-          ]
+          // Range parameters
+          "parameters": [-10, 10]
         },
+        // Testing and documentation values
         "example_values": [
           64,
           27,
@@ -498,24 +506,27 @@ The automation system actually uses two related databases that work together:
         ]
       }
     ],
-    "output_policy": "same",
+    // Return value specification
     "returns": {
+      // Return value description
       "desc": "absolute value",
+      // Cross-language return type mapping
       "type": {
+        // JavaScript return type
         "javascript": "number",
+        // JSDoc return type annotation
         "jsdoc": "number",
+        // C implementation return type
         "c": "float",
+        // ndarray return dtype
         "dtype": "float32"
       }
     },
+    // NPM package keywords
     "keywords": [
-      "abs",
-      "absf",
-      "fabsf",
-      "absolute",
-      "magnitude",
-      "value"
+      "abs", "absf", "fabsf", "absolute", "magnitude", "value"
     ],
+    // Additional search keywords
     "extra_keywords": [
       "math.abs"
     ]
@@ -523,96 +534,45 @@ The automation system actually uses two related databases that work together:
 }
 ```
 
-This two-database approach separates manual curation (source database) from automated processing (generated database), ensuring both human oversight and automated maintenance.
+This database is automatically generated by scraping metadata from individual scalar packages.
 
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/database-workflow.png" alt="Database workflow showing how the two databases work together" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 6: Database workflow showing how the function database and structured package data database work together to provide comprehensive metadata for automated universal function generation.
-  </figcaption>
-</figure>
+### How the Databases Work Together
 
-### Defining Higher Level Abstractions
-
-The key difference between the databases is their purpose and structure:
-
-**Source Database Structure**:
-- Organized by function name (`abs`, `sqrt`, etc.)
-- Contains high-level specifications and policies
-- Focuses on what universal functions should be generated
-
-**Generated Database Structure**:
-- Organized by scalar package name ([`@stdlib/math/base/special/absf`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/absf), etc.)
-- Contains detailed metadata extracted from individual packages
-- Includes comprehensive parameter information, examples, and documentation data
-- Used by scaffolding and generation scripts that need rich package details
-
-This database entry encodes all the critical information needed for universal function generation:
-
-**Input/Output Type Specifications**:
-- `input_dtypes: "numeric_and_generic"` - Accepts all numeric types plus generic arrays
-- `output_dtypes: "real_and_generic"` - Outputs are always real-valued (absolute values can't be complex)
-
-**Scalar Kernel Mappings**:
-Each data type is mapped to its optimal scalar implementation:
-- `float64` → [`@stdlib/math/base/special/abs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/abs) (double precision)
-- `float32` → [`@stdlib/math/base/special/absf`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/absf) (single precision optimized)
-- `complex128` → [`@stdlib/math/base/special/cabs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/cabs) (complex absolute value)
-- `int32` → [`@stdlib/math/base/special/labs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special/labs) (long integer absolute value)
-- `uint32`, `uint16`, `uint8` → identity functions (absolute value of unsigned is identity)
-
-**Exclusion Rules**:
-Data types that need to be excluded from universal function generation can be listed here. For example: `["float16", "int64", "uint64", "uint8c", "complex32"]`
-
-**Type Policies**:
-- `output: "real_and_generic"` - Determines output type based on input
-- `casting: "none"` - No automatic input casting (preserve input precision)
-
-### 2. Keeping Things in Sync
-
-### The Database Synchronization Challenge
-
-The database needs to stay synchronized with the actual scalar function implementations. When someone adds a new scalar function like `@stdlib/math/base/special/sinc` or updates the metadata for an existing function, the database should automatically reflect those changes.
-
-Manual synchronization would be error-prone and easily forgotten. Instead, the system includes an automated script ([`generate_unary_database.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/scripts/generate_unary_database.js)) that crawls through all scalar function packages and extracts their metadata.
-
-### How Database Generation Works
-
-The script uses a systematic approach to discover and process scalar functions:
+The generation process orchestrates both databases into a systematic pipeline. When the runner processes the `abs` function, it first queries the function database to get the mathematical specification:
 
 ```javascript
-function extractScaffold( pkgPath ) {
-    var pkg;
-    var o;
-    pkg = tryRequire( join( pkgPath, 'package.json' ) );
-    if ( pkg instanceof Error ) {
-        return {};
-    }
-    o = pkg[ '__stdlib__' ];
-    if ( o && o.scaffold ) {
-        return o.scaffold;
-    }
-    return {};
-}
+// Query: What does abs need to support?
+const spec = functionDB['abs'];
+// Returns: input_dtypes: 'numeric_and_generic', output_dtypes: 'real_and_generic'
+// Returns: scalar_kernels: { float32: '@stdlib/math/base/special/absf', ... }
 ```
 
-1. **Package Discovery**: Scans for packages matching [`lib/node_modules/@stdlib/math/base/special/*/package.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/base/special)
-2. **Metadata Extraction**: For each package, extracts scaffold metadata from the `__stdlib__.scaffold` field
-3. **Database Generation**: Processes and merges the extracted metadata with the source database to create the comprehensive [`unary.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary.json) file used by code generation scripts
+This tells the system to generate universal functions for all numeric dtypes, with real-number outputs. The scalar_kernels mapping shows which specific implementation to use for each dtype - `float32` arrays should use the `absf` kernel.
 
-The process ensures that both manually curated function specifications (from [`unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json)) and automatically discovered package metadata are included in the final generated database.
+Next, the system queries the package database for each kernel's implementation details:
 
-This approach ensures that the generated database ([`unary.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary.json)) automatically includes any new scalar functions that follow stdlib's metadata conventions, while the source database ([`unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json)) provides the manually curated specifications for universal function generation.
+```javascript
+// Query: What are absf's exact specifications?
+const details = packageDB['@stdlib/math/base/special/absf'];
+// Returns: parameters: [{ name: 'x', type: { javascript: 'number', c: 'float' } }]
+// Returns: returns: { type: { javascript: 'number', c: 'float' } }
+```
 
-### 3. Automation with GitHub Workflows
+With both queries complete, the system generates the complete universal function package. The type dispatch logic maps `float32` input arrays to the `absf` kernel, the native binding creates a C function signature `float stdlib_ndarray_f_f( float x )`, documentation pulls parameter descriptions and return types directly from the package metadata, and test cases use the `example_values` array to ensure comprehensive coverage. This same systematic process repeats for each dtype - when the system encounters `int32`, it queries the function database for the `labs` mapping, retrieves implementation details from the package database, and generates the corresponding universal function variant with the same precision and consistency.
 
-### Automated Maintenance with GitHub Workflows
+The final piece ensures the system stays current without manual intervention. GitHub workflows monitor for changes to the source database, scalar package updates, or generation script modifications. When triggered, they regenerate the enriched database, run the code generation scripts, and create pull requests for review. This closed loop means improvements to scalar functions automatically propagate to their universal counterparts while maintaining human review through the pull request process.
 
-The final piece of the database system is ensuring it stays updated without manual intervention. A GitHub workflow monitors the repository for changes to scalar function packages and automatically updates the database when needed.
+## The Three-Component Architecture
 
-The workflow is triggered by changes to specific file patterns:
+At its core, stdlib's universal function system revolves around three key components that work together to provide both flexibility and performance:
 
-// TODO
+**Scalar Kernels** form the mathematical foundation, which are specialized functions like `abs`, `absf`, `cabs`, and `labs` that know how to compute specific operations for specific types. These kernels encapsulate the mathematical knowledge, from simple operations like absolute value to complex functions like Bessel functions or gamma distributions.
+
+**Loops** provide the array processing infrastructure that applies scalar kernels across multi-dimensional data. The iteration system handles memory layout optimization, stride processing, and type dispatch without the kernels needing to know anything about arrays. This separation allows the same scalar implementations to work with any array shape or memory layout.
+
+**Native Addons** bridge the performance gap between JavaScript's flexibility and C's speed. When processing large numeric arrays, the N-API bindings enable direct C execution without JavaScript overhead. For generic arrays containing arbitrary JavaScript objects, the system gracefully falls back to optimized JavaScript implementations that can handle the accessor protocol efficiently.
+
+This architecture enables stdlib to provide a unified interface that automatically selects the best execution path. The same `abs(x)` call works whether `x` is a float32 array that can leverage native C performance, a complex array that needs specialized mathematical handling, or a generic array containing custom objects. The system handles the complexity while presenting a simple, consistent API.
 
 ## From Database to Working Code
 
@@ -620,351 +580,9 @@ The database provides the metadata, but the real magic happens in the code gener
 
 The generation system uses a sophisticated template-based approach that can create all the necessary files for a universal function package from a single database entry.
 
-The generation process involves several key components working together: the universal function factory that creates the runtime behavior, the type system that handles all the complex mappings, and the native bindings that provide optimal performance. Let's examine each of these in detail.
+The generation process involves several key components working together: the universal function factory that creates the runtime behavior, the type system that handles all the complex mappings, and the native bindings that provide optimal performance.
 
-### Scalar Kernels: The Foundation
-
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/scalar-kernel.png" alt="Scalar math kernel architecture showing JavaScript and C implementations with comprehensive testing and documentation" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 11: Scalar math kernel architecture showing how each mathematical function has both JavaScript and C implementations, along with comprehensive tests, benchmarks, examples, and documentation that serve as the foundation for universal functions.
-  </figcaption>
-</figure>
-
-Universal functions are built on scalar kernels, which consist of the actual implementations that do the math on individual values. The database tells us which kernel to use for each data type, and the universal function system handles all the array processing and type dispatch.
-
-The next critical component is the type system, which can be arguably the most complex part of universal function generation. This system must handle dozens of type combinations while respecting stdlib's promotion rules and mathematical constraints.
-
-### Type System Generation
-
-The trickiest part of generating universal functions is figuring out all the type combinations. The system automatically creates type mappings that handle all the promotion rules, like how `int32` can be promoted to `float64`, or how `complex128` absolute values become `float64`.
-
-The type system generation follows a two-step process:
-
-**Step 1: Scalar Kernel Selection**
-When processing an input array, the system first checks if a scalar kernel exists for the exact input data type. If found, it uses that kernel directly for optimal performance.
-
-In the example below, we have a `float32` ndarray being processed by function `foo()`. The system checks if there's a scalar kernel specifically designed for `float32` inputs. However, the available scalar kernels are only for `float16`, `complex128`, and `float64` - but not `float32`. Since no exact match exists, the system moves to step 2.
-
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/picking-up-a-kernel.png" alt="Type system step 1 showing scalar kernel selection process" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 7: Type system step 1 - Scalar kernel selection process showing how the system checks for exact dtype matches before considering type promotion.
-  </figcaption>
-</figure>
-
-**Step 2: Type Promotion and Casting**
-If no exact kernel match exists, the system applies "mostly safe casts" to find compatible kernels. This includes precision-preserving promotions and mathematically valid transformations.
-
-Continuing our `float32` example, the system now applies mostly safe casting rules. The `float32` input can be safely promoted to multiple output types: `complex128`, `complex64`, `complex32`, `float16`, `float32` (identity), `float64`, and even `generic` for maximum compatibility. This flexibility ensures that mathematical operations can proceed even when exact kernel matches aren't available.
-
-You can explore these casting rules interactively using stdlib's [`mostlySafeCasts`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/ndarray/mostly-safe-casts) function:
-
-```javascript
-In [2]: var mostlySafeCasts = require('@stdlib/ndarray/mostly-safe-casts')
-Out[2]: [Function: mostlySafeCasts]
-
-In [3]: mostlySafeCasts('float32')
-Out[3]: [
-  'float64',
-  'float32',
-  'float16',
-  'complex128',
-  'complex64',
-  'complex32',
-  'generic'
-]
-```
-
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/mostly-safe-casts.png" alt="Type system step 2 showing type promotion and casting rules" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 8: Type system step 2 - Type promotion showing how input types are cast to compatible output types when no exact scalar kernel match exists.
-  </figcaption>
-</figure>
-
-For example, the `abs` function's type system includes mappings like:
-
-```javascript
-// From lib/types.js - generated automatically
-var types = [
-    dtypes.float64.enum, dtypes.float64.enum,
-    dtypes.float64.enum, dtypes.generic.enum,
-
-    dtypes.float32.enum, dtypes.float32.enum,
-    dtypes.float32.enum, dtypes.float64.enum,
-    dtypes.float32.enum, dtypes.generic.enum,
-
-    dtypes.generic.enum, dtypes.generic.enum,
-
-    dtypes.complex128.enum, dtypes.float64.enum,
-    dtypes.complex128.enum, dtypes.generic.enum,
-
-    dtypes.complex64.enum, dtypes.float32.enum,
-    dtypes.complex64.enum, dtypes.float64.enum,
-    dtypes.complex64.enum, dtypes.generic.enum,
-
-    // ... many more type combinations for int32, int16, int8, uint32, uint16, uint8, uint8c
-];
-```
-
-Note that although `float32` can be cast to complex types using mostly safe casts, you won't see `float32` → `complex128` mappings in the `abs` function's type system. This is because `abs` has an output policy that restricts it to only produce real-valued (float) outputs, since the absolute value of any number is always real. The output policy overrides the general casting rules to ensure mathematical correctness.
-
-### Native C Binding Generation
-
-The system automatically generates native C addon files that provide high-performance implementations for Node.js environments.
-
-Here's an example of the generated addon.c structure for the `abs` function:
-
-```c
-// Auto-generated addon.c file
-#include "stdlib/math/base/special/abs.h"
-#include "stdlib/math/base/special/absf.h"
-#include "stdlib/math/base/special/labs.h"
-#include "stdlib/number/uint32/base/identity.h"
-#include "stdlib/ndarray/base/function_object.h"
-#include "stdlib/ndarray/base/napi/unary.h"
-
-// Define an interface name:
-static const char name[] = "stdlib_ndarray_abs";
-
-// Define a list of ndarray functions:
-static ndarrayFcn functions[] = {
-    // float64 (1)
-    stdlib_ndarray_d_d,
-
-    // float32 (2)
-    stdlib_ndarray_f_f,
-    stdlib_ndarray_f_d,
-
-    // int32 (3)
-    stdlib_ndarray_i_i,
-    stdlib_ndarray_i_u,
-    stdlib_ndarray_i_d,
-
-    // ... more function mappings
-};
-```
-
-The function names follow a specific naming convention that encodes the input and output data types:
-
-- `stdlib_ndarray_i_d` means: input type `i` (int32) → output type `d` (float64)
-- `stdlib_ndarray_f_f` means: input type `f` (float32) → output type `f` (float32)
-- `stdlib_ndarray_d_d` means: input type `d` (float64) → output type `d` (float64)
-
-**Type Promotion and Demotion Process**
-
-When no exact scalar kernel exists for the input type, the system performs a sophisticated three-step process: type promotion, computation at higher precision, and type demotion back to the desired output format.
-
-Consider the function `stdlib_ndarray_f_f_as_d_d` - this represents a scenario where:
-1. Input is `float32` (`f`) but no `float32` kernel exists
-2. Input gets promoted to `float64` (`d`) for computation
-3. Computation happens at higher precision using the `float64` kernel
-4. Result gets demoted back to `float32` (`f`) for the output
-
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/type-promotion-demotion.png" alt="Type promotion and demotion process showing float32 input promoted to float64 for computation then demoted back" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 9: Type promotion and demotion process - When no float32 kernel exists, the input array is promoted to float64 for higher-precision computation, then the results are demoted back to float32 for the output array.
-  </figcaption>
-</figure>
-
-This approach ensures mathematical accuracy by computing at higher precision while maintaining the expected output type. The input ndarray values (7.0, 5.5, 1.24, 3.7) are promoted to float64, processed through the `foo()` function, and then the results are carefully demoted back to float32 (7.0, 5.0, 1.0, 3.0) in the output array.
-
-## Scaffold System and Template Generation
-
-The automation system leverages stdlib's existing scaffold infrastructure, which provides template-based package generation.
-
-The overall architecture follows a data-driven approach where function requirements flow through template files and runner scripts to generate complete packages automatically:
-
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/scaffold-architecture.png" alt="Scaffold architecture showing the flow from requirements through data, template files, and runner scripts to generate packages" style={{position:'relative',left:'10%',width:'80%'}}/>
-  <figcaption>
-    Figure 10: Scaffold architecture overview - The automatic creation of packages follows a systematic flow where requirements drive data collection, which feeds into template files processed by runner scripts to generate complete universal function packages.
-  </figcaption>
-</figure>
-
-### Math Special Unary Scaffold
-
-The `math-special-unary` scaffold generates complete universal function packages for ndarray operations, which is located at [`@stdlib/_tools/scaffold/math-special-unary`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/_tools/scaffold/math-special-unary).
-
-### Runner Pattern for Batch Generation
-
-The system includes a runner script that processes all functions from the database:
-
-```javascript
-var DATA = require( '@stdlib/math/special/data/unary.json' );
-var FUNCTION_DATABASE = require( '@stdlib/math/special/data/unary_function_database.json' );
-
-// Process each function in the database
-var dataKeys = objectKeys( DATA );
-for ( i = 0; i < dataKeys.length; i++ ) {
-    var dataKey = dataKeys[ i ];
-    var o = DATA[ dataKey ];
-    var alias = o.alias;
-
-    console.log( 'Processing function: %s...', alias );
-
-    // Build environment variables for scaffold
-    var envs = [];
-    envs.push( 'ALIAS=\'' + alias + '\'' );
-    envs.push( 'PKG_PATH=\'stdlib/math/special\'' );
-    envs.push( 'SCALAR_KERNEL_PATH=\'' + dataKey + '\'' );
-
-    // Get function specifications from database
-    var baseAlias = o.base_alias || o.alias;
-    var funcData = FUNCTION_DATABASE[ baseAlias ];
-    if ( funcData ) {
-        envs.push( 'INPUT_DTYPES=\'' + funcData.input_dtypes + '\'' );
-        envs.push( 'OUTPUT_DTYPES=\'' + funcData.output_dtypes + '\'' );
-        envs.push( 'OUTPUT_POLICY=\'' + funcData.policies.output + '\'' );
-        envs.push( 'CASTING_POLICY=\'' + funcData.policies.casting + '\'' );
-    }
-
-    // Execute scaffold generation
-    var cmd = envs.join( ' ' ) + ' . ' + SCAFFOLD_SCRIPT;
-    shell( cmd );
-}
-```
-
-## End-to-End Workflow: From Database to Package
-
-Let me walk you through the complete workflow that transforms a database entry into a production-ready universal function package:
-
-### Step 1: Database Entry Creation
-
-A new function starts with an entry in the unary function database:
-
-```json
-  "sqrt": {
-    "input_dtypes": "real_and_generic",
-    "output_dtypes": "real_floating_point_and_generic",
-    "excluded_dtypes": [
-      "float16",
-      "uint8c",
-      "int64",
-      "uint64"
-    ],
-    "scalar_kernels": {
-      "float32": "@stdlib/math/base/special/sqrtf",
-      "float64": "@stdlib/math/base/special/sqrt",
-      "generic": "@stdlib/math/base/special/sqrt"
-    },
-    "policies": {
-      "output": "real_floating_point_and_generic",
-      "casting": "none"
-    }
-  }
-```
-
-### Step 2: Scaffold Metadata Extraction
-
-The system extracts detailed metadata from each scalar kernel's package.json:
-
-```json
-"@stdlib/math/base/special/sqrt": {
-    "$schema": "math/base@v1.0",
-    "base_alias": "sqrt",
-    "alias": "sqrt",
-    "pkg_desc": "compute the principal square root",
-    "desc": "computes the principal square root",
-    "short_desc": "principal square root",
-    "parameters": [
-      {
-        "name": "x",
-        "desc": "input value",
-        "type": {
-          "javascript": "number",
-          "jsdoc": "number",
-          "c": "double",
-          "dtype": "float64"
-        },
-        "domain": [
-          {
-            "min": 0,
-            "max": "infinity"
-          }
-        ],
-        "rand": {
-          "prng": "random/base/uniform",
-          "parameters": [
-            0,
-            100
-          ]
-        },
-        "example_values": [
-          0,
-          0.01,
-          0.25,
-          0.5,
-          1,
-          2,
-          3,
-          4,
-          9,
-          16,
-          25,
-          36,
-          49,
-          64,
-          81,
-          100,
-          0.1,
-          10,
-          50,
-          99.99
-        ]
-      }
-    ],
-    "output_policy": "real_floating_point_and_generic",
-    "returns": {
-      "desc": "square root",
-      "type": {
-        "javascript": "number",
-        "jsdoc": "number",
-        "c": "double",
-        "dtype": "float64"
-      }
-    },
-    "keywords": [
-      "sqrt",
-      "square",
-      "root",
-      "principal"
-    ],
-    "extra_keywords": [
-      "math.sqrt"
-    ]
-  }
-```
-
-### Step 3: Type System Generation
-
-The system automatically computes all valid input-output type combinations:
-
-```javascript
-// Generated types.js
-var types = [
-    // float64 -> float64
-    dtypes.float64.enum, dtypes.float64.enum,
-    dtypes.float64.enum, dtypes.generic.enum,
-
-    // float32 -> float32, float64
-    dtypes.float32.enum, dtypes.float32.enum,
-    dtypes.float32.enum, dtypes.float64.enum,
-    dtypes.float32.enum, dtypes.generic.enum,
-
-    // int32 -> float64 (promotion)
-    dtypes.int32.enum, dtypes.float64.enum,
-    dtypes.int32.enum, dtypes.generic.enum,
-
-    // ... more type combinations
-];
-```
-
-### Step 4: Package Generation
-
-The scaffold system generates a complete package structure:
+Each generated package contains a complete structure:
 
 ```
 @stdlib/math/special/abs/
@@ -1011,44 +629,11 @@ The scaffold system generates a complete package structure:
     └── test.main.native.js
 ```
 
-### Step 5: Integration and Testing
-
-The generated package integrates seamlessly with stdlib's ecosystem:
-
-```javascript
-var sqrt = require( '@stdlib/math/special/sqrt' );
-var array = require( '@stdlib/ndarray/array' );
-
-// Works with any supported data type
-var x = array( [[1.0, 4.0], [9.0, 16.0]] );
-var y = sqrt( x );
-// returns <ndarray>[ [1.0, 2.0], [3.0, 4.0] ]
-```
-
 ## Conclusion
 
-What we built, concretely:
-- A dedicated scaffold at [`lib/node_modules/@stdlib/_tools/scaffold/math-special-unary/`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/_tools/scaffold/math-special-unary) with templates for lib/, src/addon.c, tests, benchmarks, docs/types, and README.
-- A runner at [`lib/node_modules/@stdlib/_tools/scaffold/math-special-unary/scripts/runner.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/_tools/scaffold/math-special-unary/scripts/runner.js) which:
-  - Iterates all functions from [`@stdlib/math/special/data/unary.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary.json) (DATA)
-  - Looks up policies and dtype families in [`@stdlib/math/special/data/unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json) (FUNCTION_DATABASE)
-  - Exports env vars (alias, descriptions, PRNG, keywords, policies) and invokes [`scaffold.sh`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/_tools/scaffold/math-special-unary/scaffold.sh) to generate packages
-- Exact package outputs matching the real structure (see [`@stdlib/math/special/abs/`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs)), including:
-  - lib: [`index.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/index.js), [`main.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/main.js), [`native.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/native.js), [`config.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/config.js), [`types.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.js), [`types.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.json), [`data.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/data.js)
-  - src: [`addon.c`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/src/addon.c), [`Makefile`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/src/Makefile)
-  - docs: [`types/index.d.ts`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/docs/types/index.d.ts), [`repl.txt`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/docs/repl.txt)
-  - test: [`test.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/test/test.js), [`test.main.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/test/test.main.js), [`test.assign.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/test/test.assign.js) (+ native variants)
-  - benchmark: 1d/nd, contiguous/noncontiguous/singleton variants (+ native)
-  - project files: [`README.md`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/README.md), [`binding.gyp`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/binding.gyp), [`include.gypi`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/include.gypi), [`manifest.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/manifest.json), [`package.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/package.json), [`scripts/types.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/scripts/types.js)
-- Type handling wired end‑to‑end:
-  - [`types.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.js)/[`types.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.json) enumerate valid input→output pairs; complex→real rules respected; generic `o` never appears in [`addon.c`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs/src/addon.c)
-  - Output and casting policies are passed into the factory in [`lib/main.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/tools/unary/lib/main.js)
+The automation system transforms a single database entry into a complete universal function package with the full stdlib structure consisting of native C bindings and comprehensive benchmarks, along with type definitions and documentation. When new data types like `float16` need support, updating the function database once will automatically propagate across all 59 type combinations, eliminating the manual inconsistencies that would otherwise plague such implementations.
 
-How to extend it:
-1. Add or update an entry in [`unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json) (only real scalar kernels; keep array items one per line).
-2. Run [`lib/node_modules/@stdlib/_tools/scaffold/math-special-unary/scripts/runner.js`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/_tools/scaffold/math-special-unary/scripts/runner.js) to regenerate packages.
-3. Verify the generated package under [`lib/node_modules/@stdlib/math/special/<alias>/`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special) matches the [`abs`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/abs) structure and passes tests/benchmarks.
-
+GitHub workflows monitor for database changes, scalar package updates, or generation script modifications, creating pull requests that maintain human review while ensuring improvements flow automatically from scalar kernels to universal functions. The [update_math_scaffold_databases workflow](https://github.com/stdlib-js/stdlib/blob/develop/.github/workflows/update_math_scaffold_databases.yml) runs whenever the function database or any scalar package metadata changes, automatically updating the package database and proposing pull requests for review.
 
 ## Acknowledgments
 
@@ -1056,6 +641,6 @@ This project wouldn't have been possible without the guidance and support of my 
 
 The technical complexity of stdlib's type system was initially overwhelming. Through extensive pair programming sessions, Athan walked me through the entire process: how dtype mappings work, the intricate promotion rules (like complex128→float64 for abs), and the logic behind every type combination. These sessions were invaluable in understanding not just what to implement, but why each piece was necessary.
 
-One of the key breakthroughs came when Athan suggested leveraging the existing function databases. This idea became the foundation of our two-database architecture: using [`unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json) as the source of truth and generating the detailed [`unary.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary.json) for scaffolding.
+One of the key breakthroughs came when Athan suggested using the function databases. This idea became the foundation of our two-database architecture: using [`unary_function_database.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary_function_database.json) as the source of truth and generating the detailed [`unary.json`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/%40stdlib/math/special/data/unary.json) for scaffolding.
 
 I'm also grateful to everyone at Quansight for providing the opportunity to work on such an impactful open-source project and learn from one of the best in the field.
