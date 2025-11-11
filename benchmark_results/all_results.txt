@@ -1,0 +1,1183 @@
+=== JavaScript Benchmarks ===
+TAP version 13
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.180918791
+  rate: 552734.1822663407
+  ...
+ok 1 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.177714583
+  rate: 562700.0233289802
+  ...
+ok 2 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.177865458
+  rate: 562222.7110561287
+  ...
+ok 3 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.824676041
+  rate: 121259.73719175867
+  ...
+ok 4 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.828481417
+  rate: 120702.76767595863
+  ...
+ok 5 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.822672125
+  rate: 121555.1092119476
+  ...
+ok 6 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.750516209
+  rate: 13324.162596466986
+  ...
+ok 7 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.738491125
+  rate: 13541.12414011746
+  ...
+ok 8 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.744898958
+  rate: 13424.639533460053
+  ...
+ok 9 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.727302291
+  rate: 1374.9441083501276
+  ...
+ok 10 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.728309291
+  rate: 1373.0430359153554
+  ...
+ok 11 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.741299833
+  rate: 1348.981822851699
+  ...
+ok 12 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.727698959
+  rate: 137.41946276440942
+  ...
+ok 13 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.7282025
+  rate: 137.32443928714883
+  ...
+ok 14 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.724524917
+  rate: 138.02147814883224
+  ...
+ok 15 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.734684083
+  rate: 13.611292569679913
+  ...
+ok 16 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.72460625
+  rate: 13.800598600964317
+  ...
+ok 17 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.729889792
+  rate: 13.700698529566502
+  ...
+ok 18 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.167101667
+  rate: 598438.0754262613
+  ...
+ok 19 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.166013541
+  rate: 602360.5026291199
+  ...
+ok 20 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.166626083
+  rate: 600146.1367845993
+  ...
+ok 21 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.784993292
+  rate: 127389.6236045798
+  ...
+ok 22 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.777640166
+  rate: 128594.18066633148
+  ...
+ok 23 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.869204792
+  rate: 115047.68602334167
+  ...
+ok 24 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.724856667
+  rate: 13795.830893557886
+  ...
+ok 25 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.723760666
+  rate: 13816.722115152912
+  ...
+ok 26 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.738637167
+  rate: 13538.446813630215
+  ...
+ok 27 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.719219125
+  rate: 1390.3968418526135
+  ...
+ok 28 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.781095542
+  rate: 1280.2531140294232
+  ...
+ok 29 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.716976625
+  rate: 1394.7456097330928
+  ...
+ok 30 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.710286625
+  rate: 140.78823460881023
+  ...
+ok 31 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.716799125
+  rate: 139.50909887062153
+  ...
+ok 32 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.799994209
+  rate: 125.00090485029999
+  ...
+ok 33 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.725893458
+  rate: 13.77612635820173
+  ...
+ok 34 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.737086791
+  rate: 13.566923355705612
+  ...
+ok 35 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=float32,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.714410792
+  rate: 13.997548906008127
+  ...
+ok 36 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.162391666
+  rate: 615795.1480096276
+  ...
+ok 37 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.141764792
+  rate: 705393.7623666107
+  ...
+ok 38 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.140600666
+  rate: 711234.1843387854
+  ...
+ok 39 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.495841792
+  rate: 201677.2317570198
+  ...
+ok 40 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.50141625
+  rate: 199435.10007902616
+  ...
+ok 41 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.521875125
+  rate: 191616.72057084538
+  ...
+ok 42 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.464084209
+  rate: 21547.813534849232
+  ...
+ok 43 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.459102708
+  rate: 21781.618417288882
+  ...
+ok 44 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.455882208
+  rate: 21935.490845038636
+  ...
+ok 45 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.449879791
+  rate: 2222.8160055315757
+  ...
+ok 46 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.451084917
+  rate: 2216.8774931572366
+  ...
+ok 47 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.451928167
+  rate: 2212.741035014974
+  ...
+ok 48 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.464311334
+  rate: 215.3727309185177
+  ...
+ok 49 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.467825458
+  rate: 213.75493421736786
+  ...
+ok 50 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.468914625
+  rate: 213.2584369702694
+  ...
+ok 51 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.485015125
+  rate: 20.61791371970101
+  ...
+ok 52 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.47490625
+  rate: 21.056787523853394
+  ...
+ok 53 benchmark finished
+# @stdlib/math/special/cos:contiguous=true,ndims=1,dtype=generic,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.473870916
+  rate: 21.102793318507864
+  ...
+ok 54 benchmark finished
+#
+1..54
+# total 54
+# pass  54
+#
+# ok
+
+=== Native Add-on Benchmarks ===
+TAP version 13
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.142279458
+  rate: 702842.1488645255
+  ...
+ok 1 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.140046042
+  rate: 714050.8833516337
+  ...
+ok 2 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.142559167
+  rate: 701463.1335493143
+  ...
+ok 3 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.219000125
+  rate: 456620.74393793155
+  ...
+ok 4 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.204179917
+  rate: 489764.1328750271
+  ...
+ok 5 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.205982458
+  rate: 485478.2342678909
+  ...
+ok 6 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 100000
+  elapsed: 0.870404959
+  rate: 114889.05131571062
+  ...
+ok 7 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 100000
+  elapsed: 0.879364084
+  rate: 113718.54027188128
+  ...
+ok 8 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 100000
+  elapsed: 0.856046084
+  rate: 116816.14094037488
+  ...
+ok 9 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.143329084
+  rate: 6976.9510283063
+  ...
+ok 10 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.143815709
+  rate: 6953.343323572531
+  ...
+ok 11 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.142415333
+  rate: 7021.715842914189
+  ...
+ok 12 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.159648042
+  rate: 626.3778668829525
+  ...
+ok 13 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.161575167
+  rate: 618.9069883492679
+  ...
+ok 14 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.160577916
+  rate: 622.7506402561608
+  ...
+ok 15 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.161096958
+  rate: 62.074418562267326
+  ...
+ok 16 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.164533291
+  rate: 60.77797349838459
+  ...
+ok 17 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.1640835
+  rate: 60.94458004613505
+  ...
+ok 18 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.138476375
+  rate: 722144.8423964015
+  ...
+ok 19 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.1321105
+  rate: 756942.1052830775
+  ...
+ok 20 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.136242375
+  rate: 733986.0304108763
+  ...
+ok 21 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.172133666
+  rate: 580943.8811347921
+  ...
+ok 22 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.174593083
+  rate: 572760.3767670452
+  ...
+ok 23 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.171776417
+  rate: 582152.0890146405
+  ...
+ok 24 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=1000
+  ---
+  iterations: 100000
+  elapsed: 0.563419583
+  rate: 177487.61849479415
+  ...
+ok 25 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=1000
+  ---
+  iterations: 100000
+  elapsed: 0.552662792
+  rate: 180942.1612012556
+  ...
+ok 26 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=1000
+  ---
+  iterations: 100000
+  elapsed: 0.555468375
+  rate: 180028.2509332777
+  ...
+ok 27 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.1202145
+  rate: 8318.46407879249
+  ...
+ok 28 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.12574725
+  rate: 7952.460192966446
+  ...
+ok 29 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.124665583
+  rate: 8021.4601009807175
+  ...
+ok 30 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.143628208
+  rate: 696.242064093705
+  ...
+ok 31 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.141346125
+  rate: 707.4831375815928
+  ...
+ok 32 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.141140959
+  rate: 708.5115526244936
+  ...
+ok 33 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.1443165
+  rate: 69.29214608170237
+  ...
+ok 34 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.141439417
+  rate: 70.7016488904221
+  ...
+ok 35 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=float32,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.141854875
+  rate: 70.49458116966372
+  ...
+ok 36 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.152867458
+  rate: 654161.4631938211
+  ...
+ok 37 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.14826225
+  rate: 674480.5235317823
+  ...
+ok 38 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=10
+  ---
+  iterations: 100000
+  elapsed: 0.151260875
+  rate: 661109.4904746519
+  ...
+ok 39 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.406932
+  rate: 245741.30321527921
+  ...
+ok 40 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.408586375
+  rate: 244746.29140533626
+  ...
+ok 41 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=100
+  ---
+  iterations: 100000
+  elapsed: 0.423845125
+  rate: 235935.23695713145
+  ...
+ok 42 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.352140875
+  rate: 28397.72576813186
+  ...
+ok 43 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.355820375
+  rate: 28104.06795844673
+  ...
+ok 44 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=1000
+  ---
+  iterations: 10000
+  elapsed: 0.381344334
+  rate: 26223.019744669917
+  ...
+ok 45 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.412640833
+  rate: 2423.4150380362385
+  ...
+ok 46 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.542141542
+  rate: 1844.5367538354035
+  ...
+ok 47 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=10000
+  ---
+  iterations: 1000
+  elapsed: 0.420123833
+  rate: 2380.250586735935
+  ...
+ok 48 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.438069042
+  rate: 228.27451933935106
+  ...
+ok 49 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.428871708
+  rate: 233.16996233288486
+  ...
+ok 50 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=100000
+  ---
+  iterations: 100
+  elapsed: 0.431342209
+  rate: 231.83448759126657
+  ...
+ok 51 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.438965667
+  rate: 22.780824906746066
+  ...
+ok 52 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.433871375
+  rate: 23.04830550298461
+  ...
+ok 53 benchmark finished
+# @stdlib/math/special/cos::native:contiguous=true,ndims=1,dtype=generic,size=1000000
+  ---
+  iterations: 10
+  elapsed: 0.429890208
+  rate: 23.26175338238921
+  ...
+ok 54 benchmark finished
+#
+1..54
+# total 54
+# pass  54
+#
+# ok
+
+=== Pure Python Benchmark ===
+zsh: command not found: python
+
+=== Pure Python Benchmark ===
+TAP version 13
+# python::pure::cos:vectorized=true,method=list_comprehension,len=10
+  ---
+  iterations: 1000000
+  elapsed: 0.38918787500006147
+  rate: 2569453.1208091774
+  ...
+ok 1 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=10
+  ---
+  iterations: 1000000
+  elapsed: 0.3819615839893231
+  rate: 2618064.333998449
+  ...
+ok 2 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=10
+  ---
+  iterations: 1000000
+  elapsed: 0.38329154200619087
+  rate: 2608980.0854093675
+  ...
+ok 3 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=100
+  ---
+  iterations: 250000
+  elapsed: 1.1354025000036927
+  rate: 220186.23351559197
+  ...
+ok 4 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=100
+  ---
+  iterations: 250000
+  elapsed: 0.9029080830077874
+  rate: 276883.11214049
+  ...
+ok 5 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=100
+  ---
+  iterations: 250000
+  elapsed: 0.8951768749975599
+  rate: 279274.41713759804
+  ...
+ok 6 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=1000
+  ---
+  iterations: 62500
+  elapsed: 2.303931000002194
+  rate: 27127.548524647864
+  ...
+ok 7 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=1000
+  ---
+  iterations: 62500
+  elapsed: 2.326600166998105
+  rate: 26863.231975367988
+  ...
+ok 8 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=1000
+  ---
+  iterations: 62500
+  elapsed: 2.324069041002076
+  rate: 26892.48851791928
+  ...
+ok 9 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=10000
+  ---
+  iterations: 15625
+  elapsed: 5.578017291991273
+  rate: 2801.1745360549244
+  ...
+ok 10 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=10000
+  ---
+  iterations: 15625
+  elapsed: 5.6585365000064485
+  rate: 2761.3146968270316
+  ...
+ok 11 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=10000
+  ---
+  iterations: 15625
+  elapsed: 5.574550541001372
+  rate: 2802.916555348557
+  ...
+ok 12 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=100000
+  ---
+  iterations: 3906
+  elapsed: 13.728989208000712
+  rate: 284.5074710761472
+  ...
+ok 13 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=100000
+  ---
+  iterations: 3906
+  elapsed: 13.770259458004148
+  rate: 283.65478601999655
+  ...
+ok 14 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=100000
+  ---
+  iterations: 3906
+  elapsed: 13.903861541999504
+  rate: 280.9291496611294
+  ...
+ok 15 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=1000000
+  ---
+  iterations: 976
+  elapsed: 35.79790658300044
+  rate: 27.264164113537266
+  ...
+ok 16 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=1000000
+  ---
+  iterations: 976
+  elapsed: 36.51520329200139
+  rate: 26.72859280544637
+  ...
+ok 17 benchmark finished
+# python::pure::cos:vectorized=true,method=list_comprehension,len=1000000
+  ---
+  iterations: 976
+  elapsed: 38.19648616699851
+  rate: 25.55208863278259
+  ...
+ok 18 benchmark finished
+#
+1..18
+# total 18
+# pass  18
+#
+# ok
+
+
+=== NumPy Benchmarks ===
+TAP version 13
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=10
+  ---
+  iterations: 1000000
+  elapsed: 0.28150629199808463
+  rate: 3552318.4682735405
+  ...
+ok 1 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=10
+  ---
+  iterations: 1000000
+  elapsed: 0.27195854199817404
+  rate: 3677031.0380863645
+  ...
+ok 2 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=10
+  ---
+  iterations: 1000000
+  elapsed: 0.2608969580032863
+  rate: 3832930.853825455
+  ...
+ok 3 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=100
+  ---
+  iterations: 250000
+  elapsed: 0.1323428750038147
+  rate: 1889032.5602552756
+  ...
+ok 4 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=100
+  ---
+  iterations: 250000
+  elapsed: 0.1346187919989461
+  rate: 1857095.8503472323
+  ...
+ok 5 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=100
+  ---
+  iterations: 250000
+  elapsed: 0.1316825410031015
+  rate: 1898505.2847219266
+  ...
+ok 6 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=1000
+  ---
+  iterations: 62500
+  elapsed: 0.20391754098818637
+  rate: 306496.4382030324
+  ...
+ok 7 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=1000
+  ---
+  iterations: 62500
+  elapsed: 0.489187375002075
+  rate: 127762.90475553442
+  ...
+ok 8 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=1000
+  ---
+  iterations: 62500
+  elapsed: 0.2148217499925522
+  rate: 290938.88306080207
+  ...
+ok 9 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=10000
+  ---
+  iterations: 15625
+  elapsed: 0.8603616249893093
+  rate: 18160.96806990218
+  ...
+ok 10 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=10000
+  ---
+  iterations: 15625
+  elapsed: 0.8481853749981383
+  rate: 18421.680520056474
+  ...
+ok 11 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=10000
+  ---
+  iterations: 15625
+  elapsed: 0.8330168340035016
+  rate: 18757.12394058812
+  ...
+ok 12 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=100000
+  ---
+  iterations: 3906
+  elapsed: 2.7162921669951174
+  rate: 1437.9896417111088
+  ...
+ok 13 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=100000
+  ---
+  iterations: 3906
+  elapsed: 2.58438387500064
+  rate: 1511.3853780716045
+  ...
+ok 14 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=100000
+  ---
+  iterations: 3906
+  elapsed: 2.5654345419898164
+  rate: 1522.5490793346873
+  ...
+ok 15 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=1000000
+  ---
+  iterations: 976
+  elapsed: 6.52685824999935
+  rate: 149.53595782474628
+  ...
+ok 16 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=1000000
+  ---
+  iterations: 976
+  elapsed: 6.48534841700166
+  rate: 150.49307103398917
+  ...
+ok 17 benchmark finished
+# python::numpy::cos:contiguous=true,ndims=1,dtype=float64,len=1000000
+  ---
+  iterations: 976
+  elapsed: 6.490880624987767
+  rate: 150.36480508403116
+  ...
+ok 18 benchmark finished
+#
+1..18
+# total 18
+# pass  18
+#
+# ok
+TAP version 13
+
+=== Pure C Benchmarks ===
+TAP version 13
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 1000000
+  elapsed: 0.004077911
+  rate: 245223573.433115065
+  ...
+ok 1 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 1000000
+  elapsed: 0.003818035
+  rate: 261914824.528537542
+  ...
+ok 2 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=10
+  ---
+  iterations: 1000000
+  elapsed: 0.003854990
+  rate: 259404044.777042478
+  ...
+ok 3 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 10000000
+  elapsed: 0.036571980
+  rate: 273433380.705894649
+  ...
+ok 4 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 10000000
+  elapsed: 0.036491871
+  rate: 274033634.308562756
+  ...
+ok 5 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=100
+  ---
+  iterations: 10000000
+  elapsed: 0.039479017
+  rate: 253299111.645237863
+  ...
+ok 6 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 10000000
+  elapsed: 0.037052870
+  rate: 269884628.501200020
+  ...
+ok 7 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 10000000
+  elapsed: 0.036661148
+  rate: 272768326.309765339
+  ...
+ok 8 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=1000
+  ---
+  iterations: 10000000
+  elapsed: 0.036355019
+  rate: 275065187.167178214
+  ...
+ok 9 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 10000000
+  elapsed: 0.049343109
+  rate: 202662543.486664087
+  ...
+ok 10 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 10000000
+  elapsed: 0.049644947
+  rate: 201430368.926070720
+  ...
+ok 11 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=10000
+  ---
+  iterations: 10000000
+  elapsed: 0.048706055
+  rate: 205313283.208020061
+  ...
+ok 12 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 10000000
+  elapsed: 0.066555023
+  rate: 150251619.189545482
+  ...
+ok 13 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 10000000
+  elapsed: 0.066854954
+  rate: 149577547.163082629
+  ...
+ok 14 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=100000
+  ---
+  iterations: 10000000
+  elapsed: 0.066881895
+  rate: 149517294.482092381
+  ...
+ok 15 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10000000
+  elapsed: 0.067872047
+  rate: 147336059.239275515
+  ...
+ok 16 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10000000
+  elapsed: 0.068155050
+  rate: 146724270.017455906
+  ...
+ok 17 benchmark finished
+# c::cos:contiguous=true,ndims=1,dtype=float64,size=1000000
+  ---
+  iterations: 10000000
+  elapsed: 0.067659855
+  rate: 147798129.576511890
+  ...
+ok 18 benchmark finished
+#
+1..18
+# total 18
+# pass  18
+#
+# ok
