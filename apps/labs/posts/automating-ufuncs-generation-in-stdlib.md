@@ -177,27 +177,25 @@ The dual implementation strategy becomes particularly important when dealing wit
 
 Creating these type mappings manually would require writing a flat array where every pair of entries represents an input type and its corresponding output type. For the 59 combinations in `abs`, this means carefully enumerating each valid transformation while ensuring mathematical correctness. Complex inputs need special handling: not through generic type promotion, but through dedicated scalar kernels that understand the mathematical relationship between complex inputs and real outputs.
 
-Here's what that manual enumeration would look like:
+Here's what that manual enumeration would look like as a flat array of input→output dtype pairs:
 
-```javascript
-var types = [
-    // float64 input
-    dtypes.float64.enum, dtypes.float64.enum,
-    dtypes.float64.enum, dtypes.generic.enum,
+```
+// float64 input
+float64 → float64
+float64 → generic
 
-    // float32 input
-    dtypes.float32.enum, dtypes.float32.enum,
-    dtypes.float32.enum, dtypes.float64.enum,
-    dtypes.float32.enum, dtypes.generic.enum,
+// float32 input
+float32 → float32
+float32 → float64
+float32 → generic
 
-    // int32 input
-    dtypes.int32.enum, dtypes.int32.enum,
-    dtypes.int32.enum, dtypes.uint32.enum,
-    dtypes.int32.enum, dtypes.float64.enum,
-    dtypes.int32.enum, dtypes.generic.enum,
+// int32 input
+int32 → int32
+int32 → uint32
+int32 → float64
+int32 → generic
 
-    // ... more combinations for int16, int8, uint32, uint16, uint8, uint8c
-];
+// ... more combinations for int16, int8, uint32, uint16, uint8, uint8c
 ```
 
 This flat array approach enables efficient runtime dispatch. The system computes an index into this array based on the input and output dtypes, then uses that same index to look up the appropriate scalar kernel in the parallel data.js array. This eliminates complex branching logic during the hot loop of array processing.
@@ -232,8 +230,8 @@ The native addon generation handles the complexity of type promotion and demotio
 
 This type promotion and demotion process is visualized below, showing how the system handles cases where no direct kernel exists for a specific input-output combination:
 
-<figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/type-promotion-demotion.png" alt="Type promotion and demotion process showing float32 input promoted to float64 for computation then demoted back to float32 output" style={{position:'relative',left:'10%',width:'80%'}}/>
+<figure align="center" style={{textAlign:'center'}}>
+  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/type-promotion-demotion.png" width="350" alt="Type promotion and demotion process showing float32 input promoted to float64 for computation then demoted back to float32 output" style={{display:'block',margin:'0 auto',height:'auto'}}/>
   <figcaption>
     Figure 9: Type promotion and demotion process. When no direct float32→float32 kernel exists for a mathematical operation, the system promotes the input to float64 for higher precision computation, then demotes the result back to the original output type.
   </figcaption>
@@ -247,31 +245,7 @@ Each universal function package contains several carefully orchestrated files th
 
 ### types.json - The Type Mapping Matrix
 
-The `types.json` file encodes the complete type mapping matrix as a compact integer array, where each pair of values represents input and output dtype enums. This enables the dispatch system to compute array indices for O(1) kernel lookup during iteration.
-
-Here's what this file looks like for the `abs` function:
-
-```json
-[12,12,12,17,11,11,11,12,11,17,17,17,15,12,15,17,14,11,14,12,14,17,6,6,6,7,6,12,6,17,4,4,4,6,4,5,4,7,4,11,4,12,4,17,1,1,1,4,1,6,1,2,1,3,1,5,1,7,1,11,1,12,1,17,7,7,7,12,7,17,5,6,5,5,5,7,5,11,5,12,5,17,2,4,2,6,2,2,2,3,2,5,2,7,2,11,2,12,2,17,3,4,3,6,3,2,3,3,3,5,3,7,3,11,3,12,3,17]
-```
-
-Each pair of numbers represents an input→output dtype combination. The first `12,12` means float64 input maps to float64 output, the next `12,17` means float64 input can also map to generic output, and so on through all 59 possible combinations.
-
-These numbers come from stdlib's dtype enumeration system. You can obtain them programmatically using the `@stdlib/ndarray/dtypes` package:
-
-```javascript
-import dtypes from '@stdlib/ndarray/dtypes';
-
-// Get enum values for specific dtypes
-const float64Enum = dtypes.float64.enum;  // 12
-const float32Enum = dtypes.float32.enum;  // 11
-const genericEnum = dtypes.generic.enum;  // 17
-
-// Or get all supported dtypes with their enums
-const allDtypes = dtypes();  // Returns array of dtype objects with name, enum, etc.
-```
-
-The scaffold system automatically generates these arrays by calling the dtype enumeration functions and building the complete type mapping matrix based on the function's casting policies.
+The `types.json` file encodes the complete type mapping matrix as a compact integer array, where each pair of values represents input and output dtype enums. This enables the dispatch system to compute array indices for O(1) kernel lookup during iteration. The scaffold system automatically generates these arrays by calling the dtype enumeration functions and building the complete type mapping matrix based on the function's casting policies.
 
 ### data.js - The Kernel Function Array
 
@@ -332,28 +306,6 @@ export default config;
 
 The key insight is that `abs` accepts any numeric type (including generic arrays) as input, but only produces real numbers or generic outputs. Complex inputs are handled by dedicated kernels that compute the magnitude, while unsigned integer types use identity functions since their absolute value is the number itself.
 
-When you chain operations like `sqrt(abs(x))`, stdlib's universal functions avoid creating temporary arrays through buffer reuse. The key insight is that both `abs` and `sqrt` can often operate in-place on the same memory buffer when the input and output dtypes match.
-
-Consider this concrete example:
-
-```javascript
-import abs from '@stdlib/math/special/abs';
-import sqrt from '@stdlib/math/special/sqrt';
-
-let x = new Float64Array([ -4.0, -9.0, -16.0 ]);
-
-// Traditional approach: creates intermediate array
-// let temp = abs(x);  // [-4, -9, -16] → [4, 9, 16]
-// let result = sqrt(temp);  // [4, 9, 16] → [2, 3, 4]
-
-// stdlib approach: reuses the same buffer
-let result = sqrt(abs(x));  // Single buffer: [-4, -9, -16] → [2, 3, 4]
-```
-
-The optimization works because both functions support `float64` → `float64` processing with contiguous memory layouts (no strides), and since these operations are element-wise and don't depend on neighboring values, the same buffer can safely hold both input and output. This means when `abs` processes a `Float64Array`, it can write results back to the same memory locations, and `sqrt` can then process those same locations without allocating intermediate storage.
-
-When dtypes differ (like `abs(int32)` → `float64`), stdlib creates a new buffer since the output requires different memory storage. But for compatible types, the system reuses buffers automatically, cutting memory usage and garbage collection pressure in half for chained operations.
-
 The automation challenge comes from generating the universal function wrappers for all these mathematical functions. Each wrapper needs type mapping matrices encoding the 59 input-output dtype combinations we saw in `types.json`, scalar kernel mappings that route each combination to the appropriate implementation, configuration policies that specify supported dtypes and casting rules, native addon bindings with N-API code to bridge JavaScript and C implementations, plus comprehensive documentation and tests ensuring the universal function behaves correctly across all supported types.
 
 The breakthrough came from recognizing that all this manual work followed predictable patterns. The automation pipeline centers around two JSON databases that capture the essential metadata needed to generate complete universal function packages.
@@ -399,7 +351,7 @@ This systematic approach eliminates the manual inconsistencies that plagued earl
 
 The function database lives at `lib/node_modules/@stdlib/math/special/data/unary_function_database.json` and contains the authoritative specifications for each mathematical function. Here's the entry for absolute value:
 
-```json
+```
 {
   // Function alias (determines generated package name)
   "abs": {
@@ -448,7 +400,7 @@ The `excluded_dtypes` field provides fine-grained control over which types to sk
 
 The package database at `lib/node_modules/@stdlib/math/special/data/unary.json` contains granular metadata extracted from individual scalar packages. Here's the entry for the `absf` (single-precision absolute value) kernel:
 
-```json
+```
 {
   // Package path (key for lookup)
   "@stdlib/math/base/special/absf": {
@@ -595,7 +547,14 @@ This architecture enables stdlib to provide a unified interface that automatical
 
 The database provides the metadata, but the real magic happens in the code generation phase. This is where database entries are transformed into complete, production-ready universal function packages.
 
-The generation system uses a sophisticated template-based approach that can create all the necessary files for a universal function package from a single database entry.
+<figure>
+  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/generation-pipeline.png" alt="Universal function generation pipeline showing templates being filled with function-specific data from the database to generate complete ufunc packages" style={{position:'relative',left:'5%',width:'90%'}}/>
+  <figcaption>
+    Figure 2: The generation pipeline. Templates for benchmarks, tests, documentation, and other files are copied while generating a ufunc. Handlebars placeholders like {{ alias }} are filled with function-specific data from the database. A script orchestrates this process, reading metadata and producing complete universal function packages for functions like sin, sqrt, and abs.
+  </figcaption>
+</figure>
+
+The generation system uses a sophisticated template-based approach that can create all the necessary files for a universal function package from a single database entry. The system starts by gathering template files for all the components a universal function package needs: benchmarks, tests, documentation, and source code. These templates contain handlebars placeholders like `{{ alias }}`, `{{ description }}`, and `{{ example_values }}` that will be replaced with function-specific data. For each function being generated (like `abs`), the system queries both databases to gather the necessary metadata. The function database provides the mathematical specification: which dtypes to support, which scalar kernels to use, and what policies apply. The package database provides the implementation details: parameter descriptions, return types, example values, and other metadata extracted from the scalar packages. A generation script then reads the templates and database entries, filling in all the handlebars placeholders with function-specific data. For `abs`, it replaces `{{ alias }}` with `abs`, `{{ description }}` with the function description, and `{{ example_values }}` with the concrete test values from the package database. This process repeats for each template file, producing a complete universal function package with benchmarks, tests, documentation, and native bindings all tailored to the specific function.
 
 The generation process involves several key components working together: the universal function factory that creates the runtime behavior, the type system that handles all the complex mappings, and the native bindings that provide optimal performance.
 
