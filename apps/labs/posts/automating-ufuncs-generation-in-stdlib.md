@@ -548,9 +548,9 @@ This architecture enables stdlib to provide a unified interface that automatical
 The database provides the metadata, but the real magic happens in the code generation phase. This is where database entries are transformed into complete, production-ready universal function packages.
 
 <figure>
-  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/generation-pipeline.png" alt="Universal function generation pipeline showing templates being filled with function-specific data from the database to generate complete ufunc packages" style={{position:'relative',left:'5%',width:'90%'}}/>
+  <img src="../public/posts/automating-ufuncs-generation-in-stdlib/ufunc-generation.png" alt="Universal function generation pipeline showing templates being filled with function-specific data from the database to generate complete ufunc packages" style={{position:'relative',left:'5%',width:'90%'}}/>
   <figcaption>
-    Figure 2: The generation pipeline. Templates for benchmarks, tests, documentation, and other files are copied while generating a ufunc. Handlebars placeholders like {{ alias }} are filled with function-specific data from the database. A script orchestrates this process, reading metadata and producing complete universal function packages for functions like sin, sqrt, and abs.
+    Figure 2: The generation pipeline. Templates for benchmarks, tests, documentation, and other files are copied while generating a ufunc. Handlebar placeholders like {{ alias }} are filled with function-specific data from the database. A script orchestrates this process, reading metadata and producing complete universal function packages for functions like sin, sqrt, and abs.
   </figcaption>
 </figure>
 
