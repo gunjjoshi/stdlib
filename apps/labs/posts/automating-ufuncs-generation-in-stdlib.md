@@ -229,17 +229,14 @@ The native addon generation handles the complexity of type promotion and demotio
 This type promotion and demotion process is visualized below, showing how the system handles cases where no direct kernel exists for a specific input-output combination:
 
 <div align="center">
-  <figure>
-    <img
-      src="../public/posts/automating-ufuncs-generation-in-stdlib/type-promotion-demotion.png"
-      width="350"
-      alt="Type promotion and demotion process showing float32 input promoted to float64 for computation then demoted back to float32 output"
-    />
-    <figcaption>
-      Figure 9: Type promotion and demotion process. When no direct float32→float32 kernel exists for a mathematical operation, the system promotes the input to float64 for higher precision computation, then demotes the result back to the original output type.
-    </figcaption>
-  </figure>
+  <img
+    src="../public/posts/automating-ufuncs-generation-in-stdlib/type-promotion-demotion.png"
+    width="350"
+    alt="Type promotion and demotion process"
+  />
+  <p><strong>Figure 9:</strong> Type promotion and demotion process. When no direct float32→float32 kernel exists for a mathematical operation, the system promotes the input to float64 for higher precision computation, then demotes the result back to the original output type.</p>
 </div>
+
 
 
 The beauty of this approach is that it happens automatically. Users don't need to understand the intricate type promotion rules or worry about whether a direct kernel exists for their specific dtype combination or not.
