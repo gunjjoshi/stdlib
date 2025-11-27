@@ -144,23 +144,42 @@ The complexity starts with the type system. The `abs` function supports 59 diffe
 
 The mostly-safe-cast system defines how input types can be promoted to higher precision types for computation:
 
-| Input Type | Can Be Cast To |
-|------------|----------------|
-| `int8` | `int8`, `int16`, `int32`, `int64`, `float16`, `float32`, `float64`, `complex32`, `complex64`, `complex128`, `generic` |
-| `int16` | `int16`, `int32`, `int64`, `float32`, `float64`, `complex64`, `complex128`, `generic` |
-| `int32` | `int32`, `int64`, `float64`, `complex128`, `generic` |
-| `int64` | `int64`, `generic` |
-| `uint8` | `uint8`, `uint8c`, `uint16`, `uint32`, `uint64`, `int16`, `int32`, `int64`, `float16`, `float32`, `float64`, `complex32`, `complex64`, `complex128`, `generic` |
-| `uint16` | `uint16`, `uint32`, `uint64`, `int32`, `int64`, `float32`, `float64`, `complex64`, `complex128`, `generic` |
-| `uint32` | `uint32`, `uint64`, `int64`, `float64`, `complex128`, `generic` |
-| `uint64` | `uint64`, `generic` |
-| `float16` | `float16`, `float32`, `float64`, `complex32`, `complex64`, `complex128`, `generic` |
-| `float32` | `float32`, `float64`, `float16`, `complex32`, `complex64`, `complex128`, `generic` |
-| `float64` | `float64`, `float32`, `float16`, `complex32`, `complex64`, `complex128`, `generic` |
-| `complex32` | `complex32`, `complex64`, `complex128`, `generic` |
-| `complex64` | `complex64`, `complex128`, `complex32`, `generic` |
-| `complex128` | `complex128`, `complex64`, `complex32`, `generic` |
-| `generic` | `generic` |
+| **from ↓ \ to →** | **i1** | **i2** | **i4** | **i8** | **u1** | **u2** | **u4** | **u8** | **f2** | **f4** | **f8** | **c4** | **c8** | **c16** | **b** | **g** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **i1** | i1 | i2 | i4 | i8 | - | - | - | - | f2 | f4 | f8 | c4 | c8 | c16 | - | g |
+| **i2** | - | i2 | i4 | i8 | - | - | - | - | - | f4 | f8 | - | c8 | c16 | - | g |
+| **i4** | - | - | i4 | i8 | - | - | - | - | - | - | f8 | - | - | c16 | - | g |
+| **i8** | - | - | - | i8 | - | - | - | - | - | - | - | - | - | - | - | g |
+| **u1** | - | i2 | i4 | i8 | u1 | u2 | u4 | u8 | f2 | f4 | f8 | c4 | c8 | c16 | - | g |
+| **u2** | - | - | i4 | i8 | - | u2 | u4 | u8 | - | f4 | f8 | - | c8 | c16 | - | g |
+| **u4** | - | - | - | i8 | - | - | u4 | u8 | - | - | f8 | - | - | c16 | - | g |
+| **u8** | - | - | - | - | - | - | - | u8 | - | - | - | - | - | - | - | g |
+| **f2** | - | - | - | - | - | - | - | - | f2 | f4 | f8 | c4 | c8 | c16 | - | g |
+| **f4** | - | - | - | - | - | - | - | - | f2 | f4 | f8 | c4 | c8 | c16 | - | g |
+| **f8** | - | - | - | - | - | - | - | - | f2 | f4 | f8 | c4 | c8 | c16 | - | g |
+| **c4** | - | - | - | - | - | - | - | - | - | - | - | c4 | c8 | c16 | - | g |
+| **c8** | - | - | - | - | - | - | - | - | - | - | - | c4 | c8 | c16 | - | g |
+| **c16** | - | - | - | - | - | - | - | - | - | - | - | c4 | c8 | c16 | - | g |
+| **b** | - | - | - | - | - | - | - | - | - | - | - | - | - | - | b | g |
+| **g** | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | g |
+
+**Key:**
+- **i1** = int8
+- **i2** = int16
+- **i4** = int32
+- **i8** = int64
+- **u1** = uint8
+- **u2** = uint16
+- **u4** = uint32
+- **u8** = uint64
+- **f2** = float16
+- **f4** = float32
+- **f8** = float64
+- **c4** = complex32
+- **c8** = complex64
+- **c16** = complex128
+- **b** = bool
+- **g** = generic
 
 Real types can be promoted to complex types (with the imaginary part set to zero), but complex types cannot be cast to real types. This prevents unsafe operations like discarding the imaginary component without explicit user intent.
 
@@ -195,7 +214,7 @@ int32 → generic
 // ... more combinations for int16, int8, uint32, uint16, uint8, uint8c
 ```
 
-This approach enables efficient runtime dispatch. The system computes an index into [this array](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.js) array based on the input and output dtypes, then uses that same index to look up the appropriate scalar kernel in a [parallel array](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/lib/data.js). This eliminates complex branching logic during the hot loop of array processing.
+This approach enables efficient runtime dispatch. The system computes an index into [this array](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/lib/types.js) array based on the input and output dtypes, then uses that same index to look up the appropriate scalar kernel in a [strided array](https://github.com/stdlib-js/stdlib/blob/develop/lib/node_modules/%40stdlib/math/special/abs/lib/data.js). This eliminates complex branching logic during the hot loop of array processing.
 
 Next, you'd create the native C addon that bridges JavaScript and the scalar implementations. This involves mapping each type combination to the appropriate scalar function, whether that's `stdlib_base_abs` for float64, `stdlib_base_absf` for float32, `stdlib_base_cabs` for complex128, or `stdlib_base_labs` for int32. The challenge is ensuring every one of those 59 type combinations has the correct C function pointer.
 
